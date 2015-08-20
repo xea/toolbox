@@ -1,7 +1,24 @@
 require "core/service"
 require "core/dispatcher"
 
-RSpec.describe ServiceRegistration do
+RSpec.describe Service do
+    context "traits" do
+
+        it "should define all traits" do
+            class TestService < Service
+                traits :test_trait
+
+                test_trait :value
+            end
+
+            service = TestService.new
+            expect(service.test_trait).to_not be_nil
+            expect(service.test_trait).to eq([:value])
+        end
+    end
+end
+
+RSpec.describe ServiceProxy do
 
     context "#consume" do
 
@@ -24,17 +41,17 @@ RSpec.describe ServiceRegistration do
             @service = TestService.new
         end
 
-        it "should return a ServiceRegistration for every non-nil object" do
-            expect(ServiceRegistration.consume(TestService.new, TestDispatcher.new)).to be_a(ServiceRegistration)
+        it "should return a ServiceProxy for every non-nil object" do
+            expect(ServiceProxy.consume(TestService.new, TestDispatcher.new)).to be_a(ServiceProxy)
         end
 
         it "should raise an error when consuming nil" do
-            expect { ServiceRegistration.consume(nil, nil) }.to raise_error "Registering nil service is not allowed"
-            expect { ServiceRegistration.consume(TestService.new, nil) }.to raise_error "Registering nil dispatcher is not allowed"
+            expect { ServiceProxy.consume(nil, nil) }.to raise_error "Registering nil service is not allowed"
+            expect { ServiceProxy.consume(TestService.new, nil) }.to raise_error "Registering nil dispatcher is not allowed"
         end
 
         it "should replace service methods with request methods" do
-            reg = ServiceRegistration.consume(@service, @dispatcher)
+            reg = ServiceProxy.consume(@service, @dispatcher)
             expect(reg.respond_to? :testmethod).to eq(true)
             expect(reg.testmethod).to be_a(ServiceRequest)
             expect(reg.testmethod.method).to eq(:testmethod)
@@ -43,7 +60,7 @@ RSpec.describe ServiceRegistration do
         end
 
         it "should generate service methods that forward arguments" do
-            reg = ServiceRegistration.consume(@service, @dispatcher)
+            reg = ServiceProxy.consume(@service, @dispatcher)
             expect(reg.testmethod.args).to eq([])
             expect(reg.testmethod(1).args).to eq([1])
             expect(reg.testmethod(1, "alma").args).to eq([1, "alma"])

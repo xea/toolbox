@@ -1,11 +1,60 @@
+require_relative "state"
+require "pry"
 # The purpose of this class is to serve as a base class for other service implementations and class tagging
 class Service
     attr_accessor :service_id
+
+    include RunState
+
+    def init
+    end
+
+    def start
+    end
+
+    def stop
+    end
+
+    def destroy
+    end
+
+    def self.metaclass; class << self; self; end; end
+
+    def self.traits(*arr)
+        return @traits if arr.empty?
+
+        attr_accessor(*arr)
+
+        arr.each do |trait_id|
+            metaclass.instance_eval do
+                # For each trait ID we define a static method that takes some values
+                define_method(trait_id) do |*trait_values|
+                    @traits ||= { required_features: [], optional_features: [] }
+                    @traits[trait_id] = trait_values
+                end
+
+            end
+        end
+
+        class_eval do
+            define_method(:initialize) do
+                # Reset traits is a hack to allow classes to omit feature declaration. 
+                self.class.reset_traits nil
+                self.class.traits.each do |k, v|
+                    instance_variable_set("@#{k}", v)
+                end
+            end
+        end
+    end
+
+    traits :required_features, :optional_features, :reset_traits
+
 end
+
 
 # A placeholder proxy for a service object that intercepts method invocations on the service object and
 # translates method calls with call requests enabling call auditing, authenticating and authorization.
-class ServiceRegistration
+class ServiceProxy
 
     # Accepts an object of a subclass of Service and replaces all of the service methods with request
     # translator methods.
@@ -20,50 +69,19 @@ class ServiceRegistration
             raise "Registering nil dispatcher is not allowed"
         else
             local_methods = service.methods - Service.instance_methods
-            registration = ServiceRegistration.new
+            proxy = ServiceProxy.new
 
             # for each service method we define a singleton method that generates ServiceRequest objects instead
             # of actual method calls
             local_methods.each do |method|
-                registration.define_singleton_method(method) { |*args, &block|
+                proxy.define_singleton_method(method) { |*args, &block|
                     request = ServiceRequest.new dispatcher, service, method, args, block
                     dispatcher.dispatch request
                 }
             end
 
-            registration
+            proxy
         end
     end
 end
 
-# A Service Registry is a collection of registered objects that are framework services themselves. Each service
-# may have a list of features it supports.
-module ServiceRegistry
-
-    # Register a new service object along with it's feature set
-    def register_service(id, service, features = [])
-        unless service_registry.has_key? id
-            service.service_id = id
-            service_registry[id] = { service: service, features: features }
-        else
-            raise "Service with id #{id} has been registered"
-        end
-    end
-
-    # Unregister a previously registered service by it's id
-    def unregister_service(id)
-        service_registry.delete id
-    end
-
-    # Retrieve a service registration based on service id
-    def service(id)
-        service_registry[id][:service] if service_registry.has_key? id
-    end
-
-protected
-    
-    def service_registry
-        @service_registry ||= {}
-    end
-
-end
