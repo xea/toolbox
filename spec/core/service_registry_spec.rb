@@ -1,4 +1,5 @@
 require "core/service_registry"
+require "core/service"
 
 RSpec.describe ServiceRegistry do
 
@@ -63,9 +64,10 @@ RSpec.describe ServiceRegistry do
 
         it "should find services by feature specification" do
             @registry.register_service :serv1, @service, [ :testfeature ]
-            expect(@registry.find(:testfeature).object_id).to eq(@service.object_id)
+            expect(@registry.find(:testfeature).class).to eq(ServiceRegistration)
+            expect(@registry.find(:testfeature).service.object_id).to eq(@service.object_id)
 
-            expect(@registry.find { |s| s.class_invariant == 13 }.object_id).to eq(@service.object_id)
+            expect(@registry.find { |s| s.class_invariant == 13 }.service.object_id).to eq(@service.object_id)
         end
 
         it "should return nil when passing no specification" do
@@ -78,4 +80,21 @@ RSpec.describe ServiceRegistry do
             expect(@registry.find(:doesntexist)).to be_nil
         end
     end
+
+    context "#find_all" do
+        it "should return all matching services" do
+            @registry.register_service :testservice, TestService.new, [ :test ]
+            expect(@registry.find_all :test).to_not be_nil
+            expect(@registry.find_all :test).to be_a(Array)
+            expect(@registry.find_all(:test).length).to eq(1)
+            expect(@registry.find_all(:test)[0].class).to eq(ServiceRegistration)
+            expect(@registry.find_all(:test)[0].service.service_id).to eq(:testservice)
+
+            @registry.register_service :othertest, TestService.new, [ :test ]
+            expect(@registry.find_all :test).to_not be_nil
+            expect(@registry.find_all :test).to be_a(Array)
+            expect(@registry.find_all(:test).length).to eq(2)
+        end
+    end
+
 end

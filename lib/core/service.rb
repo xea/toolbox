@@ -18,6 +18,10 @@ class Service
     def destroy
     end
 
+    def feature_up(feature, service)
+        instance_variable_set("@#{feature.to_s}", service)
+    end
+
     def self.metaclass; class << self; self; end; end
 
     def self.traits(*arr)

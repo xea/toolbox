@@ -1,8 +1,8 @@
 # Selects an appropriate handler for service requests
 module Dispatcher
 
-    def dispatch(request, services)
-        service = services[request.service][:service]
+    def dispatch(request)
+        service = request.service
         method = service.method(request.method)
         method.call(*request.args)
     end

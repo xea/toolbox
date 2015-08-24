@@ -45,4 +45,5 @@ RSpec.describe Core do
             expect(service.state).to eq(RunState::STOPPED)
         end
     end
+
 end

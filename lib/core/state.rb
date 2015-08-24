@@ -1,10 +1,10 @@
 module RunState
 
-    UNDEFINED = -1
-    STOPPED = 0
-    STARTING = 1
-    STARTED = 2
-    STOPPING = 3
+    UNDEFINED = :undefined
+    STOPPED = :stopped
+    STARTING = :starting
+    STARTED = :started
+    STOPPING = :stopping
 
     def set_state_stopped
         @_state = RunState::STOPPED
