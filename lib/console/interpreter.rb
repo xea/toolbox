@@ -126,7 +126,7 @@ class Interpreter
         if command.kind_of? Method or command.kind_of? Proc
             method = command
         elsif command.kind_of? Command
-            method = command.action
+            method = command.method
         end
 
         method.parameters.map do |param|

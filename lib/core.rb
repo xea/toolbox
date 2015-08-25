@@ -16,6 +16,8 @@ class Core < Service
     def initialize(id)
         @id = id.to_sym
         set_state_stopped
+
+        register_service :framework, self, :framework
     end
 
     # Start framework. It will also start every service marked to autostart as well
@@ -48,13 +50,9 @@ protected
         if service.state? RunState::STOPPED 
             service.set_state_starting
 
-            required_services = Hash[*(service.required_features.map do |feature|
-                [ feature, find(feature) ]
-            end).flatten]
-
-            optional_services = Hash[*(service.optional_features.map do |feature|
-                [ feature, find(feature) ]
-            end).flatten]
+            required_services, optional_services = [ :required_features, :optional_features ].map { |type|
+                Hash[*(service.send(type).map { |feature| [ feature, find(feature)] }).flatten] 
+            }
 
             # If any of the required services is missing then we can't start the service
             unless required_services.has_value? nil

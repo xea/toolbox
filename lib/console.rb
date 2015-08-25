@@ -6,11 +6,14 @@ require_relative "console/history"
 require_relative "console/interpreter"
 require_relative "console/autocomplete"
 
+require_relative "console/mode_core"
+
 class ConsoleService < Service
 
     include RunState
 
     required_features :logger 
+    optional_features :framework
 
     def initialize
         super
@@ -20,6 +23,9 @@ class ConsoleService < Service
 
     def start
         @logger.info "Starting console service"
+
+        @console.interpreter.register_mode ModeCore, :local
+        @console.interpreter.register_helper :framework, @framework
         @console.start
     end
 
