@@ -6,11 +6,15 @@ module ServiceRegistry
 
     SERVICE_FEATURE = :service
 
+    DEFAULT_PRIORITY = 4
+
     # Register a new service object along with it's feature set
-    def register_service(id, service, features = [], options = { autostart: true })
+    def register_service(id, service, features = [], options = { autostart: true, priority: DEFAULT_PRIORITY })
         unless service_registry.has_key? id
             service.service_id = id
             features << SERVICE_FEATURE unless features.member? SERVICE_FEATURE
+            options[:autostart] = true unless options.has_key? :autostart
+            options[:priority] = DEFAULT_PRIORITY unless options.has_key? :priority
             service_registry[id] = ServiceRegistration.new(id, service, features, options)
 
             # Optional callback method notifying the listener that the registration has completed
@@ -32,6 +36,8 @@ module ServiceRegistry
 
     # Find a service that has the capabilities specified by spec additionally narrowed by blk
     def find(spec = SERVICE_FEATURE, &blk)
+        #active_filter = -> service { service.state? RunState::STARTED and blk.call(service) }
+
         find_all(spec, &blk)[0]
     end
 
@@ -43,7 +49,7 @@ module ServiceRegistry
             base = base.find_all { |service| blk.call(service.service) }
         end
 
-        base
+        base.sort { |a, b| a.options[:priority] <=> b.options[:priority] }
     end
 
     # Find a service based on it's service id

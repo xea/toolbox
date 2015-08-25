@@ -79,6 +79,7 @@ RSpec.describe ServiceRegistry do
             @registry.register_service :serv1, @service, [ :testfeature ]
             expect(@registry.find(:doesntexist)).to be_nil
         end
+
     end
 
     context "#find_all" do
@@ -94,6 +95,20 @@ RSpec.describe ServiceRegistry do
             expect(@registry.find_all :test).to_not be_nil
             expect(@registry.find_all :test).to be_a(Array)
             expect(@registry.find_all(:test).length).to eq(2)
+        end
+
+        it "should return services ordered by priority" do
+            @registry.register_service :srv1, TestService.new, [ :test ], { priority: 3 }
+            @registry.register_service :srv2, TestService.new, [ :test ], { priority: 5 }
+            @registry.register_service :srv3, TestService.new, [ :test ], { priority: 1 }
+            @registry.register_service :srv4, TestService.new, [ :test ], { priority: 2 }
+
+            services = @registry.find_all :test
+            expect(services.length).to eq(4)
+            expect(services[0].options[:priority]).to eq(1)
+            expect(services[1].options[:priority]).to eq(2)
+            expect(services[2].options[:priority]).to eq(3)
+            expect(services[3].options[:priority]).to eq(5)
         end
     end
 

@@ -1,5 +1,6 @@
 require_relative "state"
 require "pry"
+
 # The purpose of this class is to serve as a base class for other service implementations and class tagging
 class Service
     attr_accessor :service_id
@@ -41,7 +42,7 @@ class Service
         end
 
         class_eval do
-            define_method(:initialize) do
+            define_method(:initialize) do |*args|
                 # Reset traits is a hack to allow classes to omit feature declaration. 
                 self.class.reset_traits nil
                 self.class.traits.each do |k, v|

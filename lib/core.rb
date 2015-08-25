@@ -68,9 +68,10 @@ protected
                 end
 
                 optional_services.each do |feature, opt_service|
-                    # TODO User a ServiceProxy here instead of the actual service    
-                    proxy = ServiceProxy.consume opt_service.service, self
-                    service.feature_up feature, proxy
+                    unless opt_service.nil?
+                        proxy = ServiceProxy.consume opt_service.service, self
+                        service.feature_up feature, proxy
+                    end
                 end
 
                 service.start
