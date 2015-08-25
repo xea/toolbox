@@ -45,6 +45,16 @@ RSpec.describe ServiceRegistry do
         it "should register the services' features" do
             @registry.register_service :serv1, @service, [ :testservice ]
         end
+
+        it "should accept single items and arrays as features" do
+            @registry.register_service :srv1, TestService.new, :testservice1
+            expect(@registry.find :testservice1).to_not be_nil
+            expect(@registry.find(:testservice1).features).to be_a(Array)
+
+            @registry.register_service :srv2, TestService.new, :testservice2
+            expect(@registry.find :testservice2).to_not be_nil
+            expect(@registry.find(:testservice2).features).to be_a(Array)
+        end
     end
 
     context "#unregister_service" do
