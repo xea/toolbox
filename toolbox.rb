@@ -6,8 +6,11 @@ require_relative "lib/logger"
 require "logger"
 
 core = Core.new :toolbox
-core.register_service :console, ConsoleService.new, [ :console ]
-core.register_service :logger, LoggerService.new, [ :logger ]
+#core.register_service :console, ConsoleService.new, [ :console ]
+#core.register_service :logger, LoggerService.new, [ :logger ]
 
-core.start
+core.framework.register_service :heartbeat, HeartBeatService.new
+core.framework.register_service :listener, HeartBeatListener.new
+
+core.bootstrap
 puts "Program finished"

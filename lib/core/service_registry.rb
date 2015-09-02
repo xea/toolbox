@@ -72,3 +72,11 @@ module EmbeddedServiceRegistry
         @service_registry ||= ServiceRegistry.new
     end
 end
+
+class LocalServiceRegistry
+    include ServiceRegistry
+
+    def service_registered(registration)
+        registration
+    end
+end

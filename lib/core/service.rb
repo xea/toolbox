@@ -6,6 +6,7 @@ class Service
     attr_accessor :service_id
 
     include RunState
+    include Celluloid
 
     def init
     end
