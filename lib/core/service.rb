@@ -1,5 +1,5 @@
 require_relative "state"
-require "pry"
+require 'celluloid/current'
 
 # The purpose of this class is to serve as a base class for other service implementations and class tagging
 class Service
@@ -34,7 +34,7 @@ class Service
             metaclass.instance_eval do
                 # For each trait ID we define a static method that takes some values
                 define_method(trait_id) do |*trait_values|
-                    @traits ||= { required_features: [], optional_features: [] }
+                    @traits ||= { required_features: [], optional_features: [], provided_features: [] }
                     @traits[trait_id] = trait_values
                 end
 
@@ -52,7 +52,7 @@ class Service
         end
     end
 
-    traits :required_features, :optional_features, :reset_traits
+    traits :required_features, :optional_features, :provided_features, :reset_traits
 
 end
 

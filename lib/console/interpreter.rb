@@ -5,6 +5,7 @@ require_relative "mode_registry"
 require_relative "mode_global"
 require_relative "mode_home"
 require_relative "mode_debug"
+require 'pry'
 
 class Interpreter
 

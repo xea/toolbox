@@ -1,3 +1,5 @@
+p Thread.current
+
 require_relative "lib/core"
 require_relative "lib/console"
 require_relative "lib/logger"
@@ -8,3 +10,4 @@ core.register_service :console, ConsoleService.new, [ :console ]
 core.register_service :logger, LoggerService.new, [ :logger ]
 
 core.start
+puts "Program finished"

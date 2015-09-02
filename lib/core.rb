@@ -1,106 +1,101 @@
-require_relative "core/service"
-require_relative "core/service_registry"
-require_relative "core/dispatcher"
-require_relative "core/inject"
-require_relative "core/state"
-require "pry"
+require_relative 'core/service'
+require_relative 'core/state'
+require 'thread'
+require 'monitor'
+require 'pry'
 
-class Core < Service
-    include Dispatcher
-    include ServiceRegistry
+class Core
+
+    attr_reader :event_queue
+
     include RunState
 
-    attr_reader :id
+    def initialize(system_name)
+        @service_registration_queue = []
+        @current_stage = []
+        @service_stages = []
+        @stage_monitor = Monitor.new
+        @event_queue = Queue.new
 
-    # Initialise a new framework instance identified by id
-    def initialize(id)
-        @id = id.to_sym
-        set_state_stopped
-
-        register_service :framework, self, :framework
+        register_service :core, self, [ :framework ]
+        commit_stage
     end
 
-    # Start framework. It will also start every service marked to autostart as well
+    def register_service(service_id, service, features)
+        @stage_monitor.synchronize do
+            @current_stage.insert 0, { id: service_id, service: service, features: features }
+        end
+
+        service_id
+    end
+
     def start
-        set_state_starting
+        commit_stage
+        process_service_queue
 
-        service_registry.each do |id, service_descriptor|
-            start_service service_descriptor
+        main_thread = Thread.current
+
+        # TODO check if console service is available and decide what to do on the main thread
+        @event_thread = Thread.new do
+            event_loop(main_thread)
         end
 
-        set_state_started
+        try_console
     end
 
-    # Stop framework and every service along with it
     def stop
-        set_state_stopping
-
-        service_registry.each do |id, service_descriptor|
-            stop_service service_descriptor
-        end
-
-        set_state_stopped
+        @event_queue << :shutdown
+        @event_thread.join unless @event_thread.nil?
     end
 
-protected
+    def process_service_queue
 
-    def start_service(service_descriptor)
-        service = service_descriptor[:service]
+        def process_stages(stages)
+            current_stage = stages.pop
 
-        if service.state? RunState::STOPPED 
-            service.set_state_starting
-
-            required_services, optional_services = [ :required_features, :optional_features ].map { |type|
-                Hash[*(service.send(type).map { |feature| [ feature, find(feature)] }).flatten] 
-            }
-
-            # If any of the required services is missing then we can't start the service
-            unless required_services.has_value? nil
-                required_services.each do |feature, req_service|
-                    if req_service.service.state? RunState::STOPPED
-                        start_service req_service
-                    end
-
-                    proxy = ServiceProxy.consume req_service.service, self
-                    service.feature_up feature, proxy
+            unless current_stage.nil?
+                current_stage.each do |service_declaration|
+                    # TODO start services
                 end
 
-                optional_services.each do |feature, opt_service|
-                    unless opt_service.nil?
-                        proxy = ServiceProxy.consume opt_service.service, self
-                        service.feature_up feature, proxy
-                    end
-                end
+                process_stages stages
+            end
+        end
 
-                service.start
-                service.set_state_started
+        @stage_monitor.synchronize do 
+            process_stages @service_stages
+        end
+    end
+
+    # Close and commit the current service stage and open a new, empty stage. Services registered up to this 
+    # point will be processed as one batch.
+    def commit_stage
+        @stage_monitor.synchronize do
+            @service_stages << @current_stage unless @current_stage.empty?
+            @current_stage = []
+        end
+    end
+
+    def event_loop
+        is_shutdown = false
+
+        while !is_shutdown do
+            message = @event_queue.pop
+
+            case message
+            when :shutdown
+                is_shutdown = true
+            else
+                # TODO message processing here
             end
         end
     end
 
-    def service_registered(service_descriptor)
-        service_descriptor[:service].set_state_stopped
-        service_descriptor[:service].init
+    def try_console
+        # if console service is available
+        #
     end
 
-    def stop_service(service_descriptor)
-        service = service_descriptor[:service]
-        service.set_state_stopping
-        service.stop
-        service.set_state_stopped
-    end
-
-private
-
 end
 
-# Make procs and lambdas dependency-injectable
-class Proc
-    include Injectable
-end
-
-# Makes instance methods dependency-injectable
-class Method
-    include Injectable
-end
 
