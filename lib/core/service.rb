@@ -1,3 +1,4 @@
+require_relative 'dispatcher'
 require_relative "state"
 require 'celluloid/current'
 

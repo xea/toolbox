@@ -12,6 +12,7 @@ module ServiceRegistry
     def register_service(id, service, features = [], options = { autostart: true, priority: DEFAULT_PRIORITY })
         unless service_registry.has_key? id
             service.service_id = id
+            features = service.provided_features if features.nil?
             features = [ features ] unless features.kind_of? Array
             features << SERVICE_FEATURE unless features.member? SERVICE_FEATURE
             options[:autostart] = true unless options.has_key? :autostart
@@ -77,6 +78,7 @@ class LocalServiceRegistry
     include ServiceRegistry
 
     def service_registered(registration)
+        registration.service.set_state_installed
         registration
     end
 end

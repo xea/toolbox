@@ -1,21 +1,25 @@
 module RunState
 
-    UNDEFINED = :undefined
-    STOPPED = :stopped
+    INSTALLED = :installed
+    RESOLVED = :resolved
     STARTING = :starting
-    STARTED = :started
+    ACTIVE = :active
     STOPPING = :stopping
 
-    def set_state_stopped
-        @_state = RunState::STOPPED
+    def set_state_installed
+        @_state = RunState::INSTALLED
+    end
+
+    def set_state_resolved
+        @_state = RunState::RESOLVED
     end
 
     def set_state_stopping
         @_state = RunState::STOPPING
     end
 
-    def set_state_started
-        @_state = RunState::STARTED
+    def set_state_active
+        @_state = RunState::ACTIVE
     end
 
     def set_state_starting
@@ -24,7 +28,7 @@ module RunState
 
     # Query the current state
     def state
-        @_state || RunState::UNDEFINED
+        @_state || RunState::INSTALLED
     end
 
     # Check if current state equals to the pargument

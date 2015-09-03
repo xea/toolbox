@@ -8,9 +8,10 @@ require 'pry'
 
 class Core
 
-    attr_reader :event_queue, :framework
+    attr_reader :event_queue, :framework, :service_registry
 
     include RunState
+    include Dispatcher
 
     def initialize(system_name)
         @current_stage = []
@@ -25,14 +26,14 @@ class Core
         commit_stage
     end
 
-    def register_service(service_id, service, features)
+    def register_service(service_id, service, features = nil)
         service_object = service.kind_of?(Class) ? service.new : service
         service_object.init
 
         service_registration_request = [ service_id, service, features ] 
 
         @stage_monitor.synchronize do
-            @current_stage.insert 0, service_registration_request
+            @current_stage << service_registration_request
         end
 
         service_id
@@ -45,9 +46,6 @@ class Core
         main_thread = Thread.current
 
         # TODO check if console service is available and decide what to do on the main thread
-        @event_thread = Thread.new do
-            event_loop(main_thread)
-        end
 
         try_console
     end
@@ -59,7 +57,7 @@ class Core
 
     def process_service_queue
         def process_stages(stages)
-            current_stage = stages.pop
+            current_stage = stages.shift
 
             unless current_stage.nil?
                 registrations = current_stage.map do |service_registration_request|
@@ -77,42 +75,34 @@ class Core
         @stage_monitor.synchronize do 
             process_stages @service_stages
         end
-
-        puts "- processing finished"
     end
 
     def start_service(service_registration)
         service = service_registration[:service]
 
-        puts "starting service #{service.service_id}"
-
-        if service.state? RunState::STOPPED
+        if service.state? RunState::INSTALLED
             service.set_state_starting
 
             required_services, optional_services = [ :required_features, :optional_features ].map { |type|
                 Hash[*(service.send(type).map { |feature| [ feature, @service_registry.find(feature)]}).flatten]
             }
-            
+
             if required_services.has_value? nil
-                raise "Can't start service because a mandatory feature dependency cannot be satisfied"
+                raise "Can't start service #{service.service_id} because a mandatory feature dependency #{service.required_features} cannot be satisfied"
             else
-                (required_services + optional_services).each do |feature, dependency|
-                    if dependency.service.state? RunState::STOPPED
+                (required_services.merge optional_services).each do |feature, dependency|
+                    if dependency.service.state? RunState::INSTALLED
                         start_service dependency
                     end
 
-                    proxy = ServiceProxy.consume service, self
+                    proxy = ServiceProxy.consume dependency.service, self
                     service.feature_up feature, proxy
                 end
 
-                service.start
-                service.set_state_started
-
+                service.async.start
+                service.set_state_active
             end
         end
-
-        service.start
-        service.set_state_started
     end
 
     # Close and commit the current service stage and open a new, empty stage. Services registered up to this 
@@ -141,7 +131,24 @@ class Core
 	
     def try_console
         # if console service is available
-        #
+
+        console = @framework.service :console
+        
+        if console.nil?
+            # No console service present, looping on main thread
+            event_loop(main_thread)
+        else
+            # Console service found, starting console on the foreground event loop on background thread
+            @event_thread = Thread.new do
+                event_loop(main_thread)
+            end
+
+            while true do
+                print console.prompt
+                input = gets
+            end
+
+        end
     end
 
 end
@@ -152,6 +159,7 @@ class Framework < Service
     provided_features :framework
 
     def initialize(core)
+        super
         @core = core
     end
 
@@ -159,7 +167,12 @@ class Framework < Service
         puts "Framework started"
     end
 
-    def find_service
+    def shutdown
+        @core.shutdown
+    end
+
+    def service(feature)
+        @core.service_registry.find(feature).service
     end
 
     def register_service(id, service, features = nil)
@@ -238,10 +251,25 @@ class HeartBeatListener < Service
     required_features :heartbeat
 
     def start
+        puts "Heartbeat listener running"
         @heartbeat.sign_up self, :beat
     end
 
     def beat
         puts "fthump"
+    end
+end
+
+class ConsoleService < Service
+
+    required_features :framework
+    provided_features :console
+
+    def start
+        sleep 0.1 # <- wtf hack to allow asynchronous calls, Celluloid srsly?
+    end
+
+    def prompt
+        "> "
     end
 end
