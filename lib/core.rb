@@ -2,6 +2,8 @@ require_relative 'core/service'
 require_relative 'core/service_registration'
 require_relative 'core/service_registry'
 require_relative 'core/state'
+require_relative 'core/framework'
+require_relative 'service/heartbeat'
 require 'thread'
 require 'monitor'
 require 'pry'
@@ -22,7 +24,12 @@ class Core
         @service_registry = LocalServiceRegistry.new
         @framework = Framework.new(self)
 
+        # Stage 0: Framework level
         register_service :framework, @framework, [ :framework ]
+        commit_stage
+
+        # Stage 1: Console host level
+        register_service :console_host, ConsoleHostService.new(STDIN, STDOUT, STDERR)
         commit_stage
     end
 
@@ -42,9 +49,6 @@ class Core
     def bootstrap
         commit_stage
         process_service_queue
-
-
-        # TODO check if console service is available and decide what to do on the main thread
 
         try_console
     end
@@ -152,7 +156,7 @@ class Core
                     @event_queue << input.strip.to_sym
                 end
             rescue
-                puts "Exception caught on main thread, shutting down"
+                puts 'Exception caught on main thread, shutting down'
             end
 
         end
@@ -160,120 +164,38 @@ class Core
 
 end
 
-# Represents the micro-service framework to the framework itself.
-class Framework < Service
+class ConsoleHostService < Service
 
-    provided_features :framework
+    provided_features :console_host
 
-    def initialize(core)
+    def initialize(io_in, io_out, io_err)
         super
-        @core = core
+        @io_in = io_in
+        @io_out = io_out
+        @io_err = io_err
     end
 
-    def start
-        puts "Framework started"
+    def in
+        @io_in
     end
 
-    def shutdown
-        @core.shutdown
+    def out
+        @io_out
     end
 
-    def service(feature)
-        @core.service_registry.find(feature).service
-    end
-
-    def register_service(id, service, features = nil)
-        @core.register_service id, service, features
-    end
-
-    def stage(reuse_last = false)
-
-    end
-end
-
-class TestService < Service
-
-    required_features :framework
-    provided_features :test
-
-    def init
-        puts "TestService init"
-    end
-
-    def destroy
-        puts "TestService destroy"
-    end
-
-    def start
-        puts "TestService start"
-    end
-
-    def stop
-        puts "TestService stop"
-    end
-
-    def test
-        puts "TestService test"
-    end
-
-    def framework_up(framework)
-        puts "TestService framework_up"
-        @framework = framework
-    end
-end
-
-class HeartBeatService < Service
-
-    provided_features :heartbeat
-
-    def init
-        @observers = []
-    end
-
-    def start
-        puts "Heartbeat service starting"
-        @running = true
-
-        while @running do
-            @observers.each do |observer|
-                observer[0].send observer[1]
-            end
-
-            sleep 5
-        end
-    end
-
-    def stop
-        puts "Heartbeat service stopping"
-        @running = false
-    end
-
-    def sign_up(listener, method)
-        @observers << [listener, method]
-    end
-end
-
-class HeartBeatListener < Service
-
-    required_features :heartbeat
-
-    def start
-        puts "Heartbeat listener running"
-        @heartbeat.sign_up self, :beat
-    end
-
-    def beat
-        puts "fthump"
+    def err
+        @io_err
     end
 end
 
 class ConsoleService < Service
 
-    required_features :framework
+    required_features :framework, :console_host
     provided_features :console
 
     def start
         sleep 0.1 # <- wtf hack to allow asynchronous calls, Celluloid srsly?
+        @console_host.out.puts 'Console service started'
     end
 
     def prompt
