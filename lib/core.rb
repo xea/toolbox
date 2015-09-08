@@ -43,7 +43,6 @@ class Core
         commit_stage
         process_service_queue
 
-        main_thread = Thread.current
 
         # TODO check if console service is available and decide what to do on the main thread
 
@@ -114,15 +113,16 @@ class Core
         end
     end
 
-    def event_loop
+    def event_loop(main_thread = nil)
         is_shutdown = false
 
         while !is_shutdown do
-            message = @event_queue.pop
+            message = @event_queue.pop.to_sym
 
             case message
             when :shutdown
                 is_shutdown = true
+                main_thread.raise("shutdown") unless main_thread == Thread.current
             else
                 # TODO message processing here
             end
@@ -139,13 +139,20 @@ class Core
             event_loop(main_thread)
         else
             # Console service found, starting console on the foreground event loop on background thread
-            @event_thread = Thread.new do
-                event_loop(main_thread)
-            end
+            main_thread = Thread.current
 
-            while true do
-                print console.prompt
-                input = gets
+            begin
+                @event_thread = Thread.new do
+                    event_loop(main_thread)
+                end
+
+                while true do
+                    print console.prompt
+                    input = gets
+                    @event_queue << input.strip.to_sym
+                end
+            rescue
+                puts "Exception caught on main thread, shutting down"
             end
 
         end
