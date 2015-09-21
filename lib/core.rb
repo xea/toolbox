@@ -2,8 +2,9 @@ require_relative 'core/service'
 require_relative 'core/service_registration'
 require_relative 'core/service_registry'
 require_relative 'core/state'
-require_relative 'core/framework'
+require_relative 'service/framework'
 require_relative 'service/heartbeat'
+require_relative 'service/console'
 require 'thread'
 require 'monitor'
 require 'pry'
@@ -150,10 +151,13 @@ class Core
                     event_loop(main_thread)
                 end
 
-                while true do
-                    print console.prompt
-                    input = gets
-                    @event_queue << input.strip.to_sym
+                console.welcome
+
+                while console.running? do
+                    console.show_prompt
+                    raw_input = console.read_input
+                    host_event = console.process_input raw_input
+                    @event_queue << host_event unless host_event.nil?
                 end
             rescue
                 puts 'Exception caught on main thread, shutting down'
@@ -164,41 +168,3 @@ class Core
 
 end
 
-class ConsoleHostService < Service
-
-    provided_features :console_host
-
-    def initialize(io_in, io_out, io_err)
-        super
-        @io_in = io_in
-        @io_out = io_out
-        @io_err = io_err
-    end
-
-    def in
-        @io_in
-    end
-
-    def out
-        @io_out
-    end
-
-    def err
-        @io_err
-    end
-end
-
-class ConsoleService < Service
-
-    required_features :framework, :console_host
-    provided_features :console
-
-    def start
-        sleep 0.1 # <- wtf hack to allow asynchronous calls, Celluloid srsly?
-        @console_host.out.puts 'Console service started'
-    end
-
-    def prompt
-        "> "
-    end
-end

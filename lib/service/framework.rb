@@ -1,4 +1,4 @@
-require_relative 'service'
+require_relative '../core/service'
 
 # Represents the micro-service framework to the framework itself.
 class Framework < Service

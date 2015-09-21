@@ -1,5 +1,5 @@
-require "core/service_registry"
-require "core/service"
+require 'core/service_registry'
+require 'core/service'
 
 RSpec.describe ServiceRegistry do
 

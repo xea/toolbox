@@ -1,4 +1,4 @@
-require "logger"
+require 'service/logger'
 
 RSpec.describe LoggerService do
 
@@ -31,10 +31,6 @@ RSpec.describe LoggerService do
     context "#initialize" do
         it "should use the standard output unless it is told otherwise" do
             expect { LoggerService.new }.to_not raise_error
-        end
-
-        it "should not accept a target that is not writeable" do
-            expect { LoggerService.new "a string" }.to raise_error("Can't accept non-writeable target")
         end
 
         it "should accept a target and use that target for subsequent logging" do

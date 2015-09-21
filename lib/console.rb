@@ -8,6 +8,7 @@ require_relative "console/autocomplete"
 
 require_relative "console/mode_core"
 
+=begin
 class ConsoleService < Service
 
     include RunState
@@ -34,7 +35,7 @@ class ConsoleService < Service
         @logger.info "Console service stopped"
     end
 end
-
+=end
 # Enables user-interaction with the framework via keyboard inputs
 class Console 
 
@@ -55,8 +56,8 @@ class Console
     def start
         @running = true
 
-        welcome
-        main_loop
+     #   welcome
+      #  main_loop
     end
 
     def stop

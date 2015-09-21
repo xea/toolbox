@@ -1,13 +1,16 @@
 require_relative 'dispatcher'
-require_relative "state"
+require_relative 'state'
 require 'celluloid/current'
 
 # The purpose of this class is to serve as a base class for other service implementations and class tagging
-class Service
+class SimpleService
     attr_accessor :service_id
 
     include RunState
-    include Celluloid
+
+    def async
+        self
+    end
 
     def init
     end
@@ -58,6 +61,9 @@ class Service
 
 end
 
+class Service < SimpleService
+    include Celluloid
+end
 
 # A placeholder proxy for a service object that intercepts method invocations on the service object and
 # translates method calls with call requests enabling call auditing, authenticating and authorization.

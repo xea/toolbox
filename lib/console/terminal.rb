@@ -25,16 +25,19 @@ class Terminal
         key_any:        /^.$/
     }
 
-    def initialize
+    def initialize(s_in = STDIN, s_out = STDOUT, s_err = STDERR)
+        @in = s_in
+        @out = s_out
+        @err = s_err
         @echo = true
     end
 
     def puts(*args)
-        $stdout.puts(*args) if @echo
+        @out.puts(*args) if @echo
     end
 
     def print(*args)
-        $stdout.print(*args) if @echo
+        @out.print(*args) if @echo
     end
 
     def shift_line(n = 1)
@@ -81,10 +84,10 @@ class Terminal
 
     # Reads a single character from the standard input.
     def get_char
-        input = STDIN.getc.chr
+        input = @in.getc.chr
         if input =="\e" then
-            input << STDIN.read_nonblock(3) rescue nil
-            input << STDIN.read_nonblock(2) rescue nil
+            input << @in.read_nonblock(3) rescue nil
+            input << @in.read_nonblock(2) rescue nil
         end
 
         input
@@ -94,7 +97,6 @@ class Terminal
         shift_line
         print status
         print "\r"
-        #print KEYTABLE[:key_up] * (1 + (status.length / winsize[1]) + status.count("\n"))
         lines = status.split(/\r\n|\n|\r/)
         width = winsize[1]
         up_count = lines.length + lines.map { |l| l.length / width }.inject { |sum, x| sum + x }
@@ -115,7 +117,7 @@ class Terminal
         print "\e[6n"
         c = ""
         while c[-1] != 'R' 
-            c += $stdin.getc
+            c += @in.getc
         end
 
         if c =~ /^.\[([0-9]+);([0-9]+)R/

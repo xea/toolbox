@@ -1,5 +1,5 @@
-require_relative "core/service"
-require "time"
+require_relative '../core/service'
+require 'time'
 
 # Very simplistic logging service. Accepts any target that has the puts and print methods.
 class LoggerService < Service
@@ -9,8 +9,6 @@ class LoggerService < Service
         # only accept the target if we can log into it
         unless [ :puts, :print ].map { |m| target.respond_to? m }.member? false
             @target = target
-        else
-            raise "Can't accept non-writeable target"
         end
     end
 
