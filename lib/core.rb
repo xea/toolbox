@@ -9,35 +9,47 @@ require 'thread'
 require 'monitor'
 require 'pry'
 
+# Implements the main framework and administrative logic, eg. module wiring, dependency injection and service location.
+#
+# Instances of this class should not be directly exposed to modules, it's functionality should be accessed through Framework
+# instances instead.
 class Core
 
-    attr_reader :event_queue, :framework, :service_registry
+    attr_reader :event_queue, :framework, :service_registry, :system_name
 
     include RunState
     include Dispatcher
 
-    def initialize(system_name)
+    # Initialise a core with the most essential services (framework and console host). 
+    def initialize(system_name, pure = false)
+        @system_name = system_name
         @current_stage = []
         @service_stages = []
         @stage_monitor = Monitor.new
         @service_monitor = Monitor.new
         @event_queue = Queue.new
         @service_registry = LocalServiceRegistry.new
-        @framework = Framework.new(self)
 
-        # Stage 0: Framework level
-        register_service :framework, @framework, [ :framework ]
-        commit_stage
+        # Setting pure to true will keep core from registering a new framework by default
+        unless pure
+            @framework = Framework.new(self)
 
-        # Stage 1: Console host level
-        register_service :console_host, ConsoleHostService.new(STDIN, STDOUT, STDERR)
-        commit_stage
+            # Stage 0: Framework level
+            register_service :framework, @framework
+            commit_stage
+
+            # Stage 1: Console host level
+            register_service :console_host, ConsoleHostService.new(STDIN, STDOUT, STDERR)
+            commit_stage
+        end
     end
 
     def register_service(service_id, service, features = nil)
+        # Make sure we've got an initialised service object here
         service_object = service.kind_of?(Class) ? service.new : service
         service_object.init
 
+        # TODO revise the data type of service registration requests but they are good as arrays for now
         service_registration_request = [ service_id, service, features ] 
 
         @stage_monitor.synchronize do
@@ -47,6 +59,7 @@ class Core
         service_id
     end
 
+    # Process the currently commited stages and initialise the services in the service queue
     def bootstrap
         commit_stage
         process_service_queue
@@ -54,6 +67,7 @@ class Core
         try_console
     end
 
+    # Initiate core shutdown. 
     def shutdown
         @event_queue << :shutdown
         @event_thread.join unless @event_thread.nil?
@@ -134,6 +148,7 @@ class Core
         end
     end
 	
+    # TODO deal with concurrent/subsequent invocations
     def try_console
         # if console service is available
 
@@ -151,20 +166,25 @@ class Core
                     event_loop(main_thread)
                 end
 
-                console.welcome
-
-                while console.running? do
-                    console.show_prompt
-                    raw_input = console.read_input
-                    host_event = console.process_input raw_input
-                    @event_queue << host_event unless host_event.nil?
-                end
-            rescue
+                run_console console
+            rescue => e
                 puts 'Exception caught on main thread, shutting down'
+                p e
             end
-
         end
     end
 
+protected
+
+    def run_console(console)
+        console.welcome
+
+        while console.running? do
+            console.show_prompt
+            raw_input = console.read_input
+            host_event = console.process_input raw_input
+            @event_queue << host_event unless host_event.nil?
+        end
+    end
 end
 

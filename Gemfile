@@ -4,6 +4,7 @@ source 'https://rubygems.org'
       gem lib, :git => "git://github.com/rspec/#{lib}.git", :branch => 'master'
 end
 
+gem 'simplecov'
 gem 'activerecord', '~> 4.1.8'
 gem 'activerecord-jdbc-adapter', '~> 1.3', platform: :jruby
 gem 'activerecord-jdbcpostgresql-adapter', platform: :jruby
