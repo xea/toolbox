@@ -6,7 +6,34 @@ RSpec.describe Core do
         provided_features :test
     end
 
-    before(:context) do
+    class ProducerService < Service
+        provided_features :provider
+
+        attr_reader :running
+
+        def initialize
+            super
+            @running = false
+        end
+
+        def start
+            @running = true
+        end
+
+        def stop
+            @running = false
+        end
+    end
+
+    class ConsumerService < Service
+        required_features :provider
+    end
+
+    class OptionalConsumerService < Service
+        optional_features :provider
+    end
+
+    before(:example) do
         @pure_core = Core.new "pure_test", true
         @core = Core.new "test", false
         @core.define_singleton_method(:current_stage) { @current_stage }
@@ -68,4 +95,20 @@ RSpec.describe Core do
             expect(@core.event_queue.pop).to eq(:shutdown)
         end
     end
+
+    context "#process_service_queue" do
+        it "should not do anything when stages are empty" do
+            expect{@pure_core.process_service_queue}.to_not raise_error
+        end
+
+        it "should start immediate services" do
+            service = ProducerService.new
+            @pure_core.register_service :producer, service
+            @pure_core.commit_stage
+            @pure_core.process_service_queue
+
+            expect(service.state).to eq(:active)
+        end
+    end
+
 end
