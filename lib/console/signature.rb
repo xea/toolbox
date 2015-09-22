@@ -1,3 +1,4 @@
+require_relative 'context'
 
 class Signature
     # exit|quit
@@ -22,7 +23,13 @@ class Signature
         when ":"
             nil
         when "$"
-            table = ctx.tables[pattern[1..-1].to_sym] || {}
+            table = {}
+
+            if ctx.kind_of? Hash
+                table = ctx[pattern[1..-1].to_sym]
+            elsif ctx.kind_of? CommandContext
+                table = ctx.tables[pattern[1..-1].to_sym] || {}
+            end
 
             if table.kind_of? Array
                 table
@@ -31,11 +38,18 @@ class Signature
                 table.keys
             end
         when "#"
-            obj = ctx.vars[:current_object] || ctx.mode_args[:scope]
+            obj = {}
+
+            if ctx.kind_of? Hash
+                obj = ctx[:current_object] || ctx[:scope]
+            elsif ctx.kind_of? CommandContext
+                obj = ctx.vars[:current_object] || ctx.mode_args[:scope]
+            end
+
             if !ctx.nil? and !obj.nil?
-                if obj.methods.member? :attributes
+                if obj.respond_to? :attributes
                     obj.attributes.keys
-                elsif obj.methods.member? :keys
+                elsif obj.respond_to? :keys
                     obj.keys.map { |k| k.to_s }
                 else
                     (obj.methods - Object.methods).map { |m| m.to_s }
