@@ -17,7 +17,7 @@ class BaseMode
         arr.each do |a|
             metaclass.instance_eval do
                 define_method( a ) do |val|
-                    @traits ||= { commands: {}, tables: {}, filters: {} }
+                    @traits ||= { mode_id: to_s.to_sym, commands: {}, tables: {}, filters: {} }
                     @traits[a] = val
                 end
             end
@@ -27,6 +27,7 @@ class BaseMode
         #    should use the default number for each trait.
         class_eval do
             define_method( :initialize ) do |*args|
+                self.class.reset_traits nil
                 self.class.traits.each do |k,v|
                     instance_variable_set("@#{k}", v)
                 end
@@ -66,7 +67,7 @@ class BaseMode
     end
 
     # Mode attributes
-    traits :mode_id, :commands, :tables, :filters
+    traits :mode_id, :commands, :tables, :filters, :reset_traits
 
     def self.register_command(cmd_id, cmd_pattern, cmd_desc = "<No description>", cmd_options = {}, &cmd_blk)
         @traits[:commands][cmd_id] = Command.new(cmd_id, cmd_pattern, cmd_desc, cmd_options, &cmd_blk)

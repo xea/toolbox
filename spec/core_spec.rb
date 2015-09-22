@@ -27,10 +27,18 @@ RSpec.describe Core do
 
     class ConsumerService < Service
         required_features :provider
+
+        def provider
+            @provider
+        end
     end
 
     class OptionalConsumerService < Service
         optional_features :provider
+
+        def provider
+            @provider
+        end
     end
 
     before(:example) do
@@ -101,13 +109,31 @@ RSpec.describe Core do
             expect{@pure_core.process_service_queue}.to_not raise_error
         end
 
-        it "should start immediate services" do
-            service = ProducerService.new
-            @pure_core.register_service :producer, service
+        it "should start immediate independent services" do
+            service_a = ProducerService.new
+            service_b = ProducerService.new
+            service_c = ProducerService.new
+            @pure_core.register_service :producer_a, service_a
+            @pure_core.register_service :producer_b, service_b
+            @pure_core.register_service :producer_c, service_c
             @pure_core.commit_stage
             @pure_core.process_service_queue
 
-            expect(service.state).to eq(:active)
+            expect(service_a.state).to eq(:active)
+            expect(service_b.state).to eq(:active)
+            expect(service_c.state).to eq(:active)
+        end
+
+        it "should start immediate dependencies" do
+            producer = ProducerService.new
+            consumer = ConsumerService.new
+            @pure_core.register_service :producer, producer
+            @pure_core.register_service :consumer, consumer
+            @pure_core.commit_stage
+            @pure_core.process_service_queue
+
+            expect(producer.state).to eq(:active)
+            expect(consumer.state).to eq(:active)
         end
     end
 

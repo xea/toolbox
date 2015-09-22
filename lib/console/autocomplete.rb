@@ -65,6 +65,7 @@ class Autocomplete
         # collecting all commands with a matching signature
         matching_commands = all_commands.find_all { |cmd| cmd.signature.matches_partial? active_input, @interpreter.build_context }
 
+
         # a: force q<tab>
         # b: force <tab>
 

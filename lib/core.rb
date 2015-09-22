@@ -123,6 +123,18 @@ class Core
         end
     end
 
+    def stop_service(service_registration)
+        service = service_registration[:service]
+
+        if service.state? RunState::ACTIVE
+            service.set_state_stopping
+
+            # TODO implement me
+            
+            service.set_state_stopped
+        end
+    end
+
     # Close and commit the current service stage and open a new, empty stage. Services registered up to this 
     # point will be processed as one batch.
     def commit_stage
