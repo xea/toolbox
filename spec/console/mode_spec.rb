@@ -8,7 +8,7 @@ RSpec.describe BaseMode do
         mode_id :id_mode
     end
 
-    class TestMode < BaseMode
+    class ModeTestMode < BaseMode
         mode_id :test
 
         attr_reader :calls
@@ -26,7 +26,12 @@ RSpec.describe BaseMode do
             @calls << :construct
         end
 
-        register_command(:inline_command, "", "") {}
+        register_command(:inline_command, "inline", "") { @calls << :inline_command }
+        register_command(:test_command, "test", "")
+
+        def test_command
+            @calls << :test_command
+        end
     end
 
     context "#initialize" do
@@ -49,7 +54,7 @@ RSpec.describe BaseMode do
         end
 
         it "should call construct if specified" do
-            mode = TestMode.new
+            mode = ModeTestMode.new
             expect(mode.calls.member? :construct).to eq(true)
         end
 
@@ -63,14 +68,33 @@ RSpec.describe BaseMode do
 
     context "#available_commands" do
         it "should list commands by default" do
-            mode = TestMode.new
+            mode = ModeTestMode.new
             expect(mode.available_commands).to_not be_nil
-            expect(mode.available_commands.length).to eq(1)
+            expect(mode.available_commands.length).to eq(2)
             expect(mode.available_commands[0]).to be_a(Command)
         end
 
     end
 
     context "#find_command" do
+        it "should always return a Method instance" do
+            mode = ModeTestMode.new
+            expect(mode.find_command "test").to_not be_nil
+            expect(mode.find_command("test").method).to be_a(Method)
+            expect(mode.find_command 'inline').to_not be_nil
+            expect(mode.find_command('inline').method).to be_a(Method)
+        end
+    end
+
+    context "#register_command" do
+        it "should register commands as instance methods" do
+            mode = ModeTestMode.new
+            expect(mode.respond_to? :test_command).to be_truthy
+        end
+
+        it "should register inline commands as instance methods" do
+            mode = ModeTestMode.new
+            expect(mode.respond_to? :inline_command).to be_truthy
+        end
     end
 end

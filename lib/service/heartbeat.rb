@@ -35,10 +35,13 @@ class HeartBeatListener < Service
 
   def start
     @heartbeat.sign_up self, :beat
+    @counter = 0
   end
 
-  def beat
-    puts 'fthump'
+  def beat(loud = false)
+    @counter += 1
+
+    puts 'fthump' if loud
   end
 end
 

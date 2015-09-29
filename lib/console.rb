@@ -45,7 +45,7 @@ class Console
         @term = Terminal.new
         @buffer = LineBuffer.new
         @history = History.new ".toolbox.history"
-        @interpreter = Interpreter.new
+        @interpreter = Interpreter.new 
         @autocomplete = Autocomplete.new @interpreter
         @running = false
 

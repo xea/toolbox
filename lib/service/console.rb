@@ -36,6 +36,7 @@ class ConsoleService < SimpleService
         @running = true
         @console_host.out.puts 'Console service started'
         @console = Console.new
+        @console.interpreter.register_helper :framework, @framework
     end
 
     def prompt

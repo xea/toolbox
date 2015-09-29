@@ -179,9 +179,9 @@ class Core
                 end
 
                 run_console console
-            rescue => e
-                puts 'Exception caught on main thread, shutting down'
-                p e
+#            rescue => e
+#                puts 'Exception caught on main thread, shutting down'
+#                p e
             end
         end
     end

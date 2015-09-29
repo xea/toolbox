@@ -6,6 +6,7 @@ class ModeCore < BaseMode
 
     register_command(:list_features, "features", "List features")
     register_command(:list_services, "services", "List services")
+    register_command(:direct_shutdown, "shutdown", "Initiate direct shutdown")
 
     def list_features(framework)
         framework.find_all.map { |descriptor| descriptor.features - [ :service ] }.each { |feature| p feature }
@@ -13,5 +14,9 @@ class ModeCore < BaseMode
 
     def list_services(framework)
         framework.find_all.each { |descriptor| puts "#{descriptor.service.service_id} #{descriptor.service.state}" }
+    end
+
+    def direct_shutdown(framework, reason = nil)
+        framework.shutdown
     end
 end

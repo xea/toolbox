@@ -21,5 +21,6 @@ class ModeHome < ModeGlobal
     def construct
         @global_vars = {}
     end
+
 end
 

@@ -5,23 +5,27 @@ require_relative "mode_registry"
 require_relative "mode_global"
 require_relative "mode_home"
 require_relative "mode_debug"
+require_relative "mode_core"
 require 'pry'
 
 class Interpreter
 
     attr_reader :modes
 
-    def initialize
+    def initialize(pure = false)
         @modes = ModeRegistry.new
         @tables = {}
         @state = InterpreterState.new(@modes, @tables)
         @helpers = { intp: @state }
 
-        register_mode ModeGlobal, :global
-        register_mode ModeHome, :local
-        register_mode ModeDebug, :local
-        @modes.enter_mode :global
-        @modes.enter_mode :home
+        unless pure
+            register_mode ModeGlobal, :global
+            register_mode ModeHome, :local
+            register_mode ModeDebug, :local
+            register_mode ModeCore, :local
+            @modes.enter_mode :global
+            @modes.enter_mode :home
+        end
 
         MethodSource::MethodExtensions.set_interpreter_instance self
     end

@@ -36,10 +36,9 @@ class BaseMode
                     # register possible command methods
                     unless v.action.nil?
                         define_singleton_method k, v.action
-                        v.method = v.action
-                    else
-                        v.method = self.method(v.id)
                     end
+
+                    v.method = self.method(v.id)
 
                     unless v.options[:filter].nil?
                         define_singleton_method "_filter_#{k}".to_sym, v.options[:filter]

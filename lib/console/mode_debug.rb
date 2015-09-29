@@ -19,4 +19,5 @@ class ModeDebug < BaseMode
     def pre_exit
         @mode_active = false
     end
+
 end
