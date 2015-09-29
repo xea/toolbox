@@ -153,7 +153,7 @@ class Core
             case message
             when :shutdown
                 is_shutdown = true
-                main_thread.raise("shutdown") unless main_thread == Thread.current
+                main_thread.raise("shutdown!") unless main_thread == Thread.current
             else
                 # TODO message processing here
             end
@@ -179,9 +179,9 @@ class Core
                 end
 
                 run_console console
-#            rescue => e
-#                puts 'Exception caught on main thread, shutting down'
-#                p e
+            rescue => e
+                puts "Exception caught (#{e}) on main thread, shutting down"
+                puts e.backtrace.first
             end
         end
     end
@@ -195,7 +195,9 @@ protected
             console.show_prompt
             raw_input = console.read_input
             host_event = console.process_input raw_input
-            @event_queue << host_event unless host_event.nil?
+            if host_event.kind_of? Symbol
+                @event_queue << host_event unless host_event.nil? if host_event.kind_of? Symbol
+            end
         end
     end
 end
