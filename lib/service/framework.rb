@@ -29,5 +29,9 @@ class Framework < Service
     def stage(reuse_last = false)
 
     end
+
+    def find_services
+        @core.service_registry.find_all
+    end
 end
 
