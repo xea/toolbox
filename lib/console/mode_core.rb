@@ -24,7 +24,6 @@ class ModeCore < BaseMode
     end
 
     def stop_service(out, framework, service_id)
-        out.puts "Stopping service #{service_id}"
         framework.stop_service service_id
     end
 

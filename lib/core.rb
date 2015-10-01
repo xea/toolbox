@@ -139,15 +139,16 @@ class Core
         if service.state? RunState::ACTIVE
             service.set_state_stopping
 
+            # TODO optimize these below expressions
             dependant_services_req = service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.required_features.member? feature } }.reduce(:+)
             dependant_services_opt = service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.optional_features.member? feature } }.reduce(:+)
 
-            dependant_services_req.each do |service_registration|
-                stop_service(service_registration)
+            dependant_services_req.each do |dep_service|
+                stop_service(dep_service)
             end
 
             dependant_services_opt.each do |dependant|
-                # TODO remove dependency
+                dependant.optional_features.find_all? { |dep_feature| service.provided_features.member? dep_feature }.each { |opt_feature| dependant.feature_up opt_feature, nil  }
             end
 
             service.stop
