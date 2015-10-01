@@ -7,6 +7,7 @@ class ModeDebug < BaseMode
     register_command(:clear_history, "clear history", "Clear command history") { |history| history.clear }
     register_command(:mode_core, "core", "Enter core management mode") { |intp| intp.modes.enter_mode :core }
     register_command(:exit_mode, "exit", "Exit current mode") { |intp| intp.modes.exit_mode }
+    register_command(:launch_debugger, "debugger", "Launch interactive debugger (pry)")
 
     def construct
         @mode_active = false
@@ -20,4 +21,7 @@ class ModeDebug < BaseMode
         @mode_active = false
     end
 
+    def launch_debugger
+        binding.pry
+    end
 end

@@ -1,5 +1,6 @@
 require_relative "mode"
 
+# Default global mode for providing commands available throughout the whole framework.
 class ModeGlobal < BaseMode
     mode_id :global
 
@@ -10,9 +11,6 @@ class ModeGlobal < BaseMode
 
     # Debug mode is allowed anywhere in the shell
     register_command(:mode_debug, "debug", "Enter debug mode", scope(true) { |intp| intp.modes.current_mode.mode_id != :debug }) { |intp| intp.modes.enter_mode :debug }
-
-    def construct
-    end
 
     # This command is generated when other commands can't be assigned to the current request
     def command_not_found
