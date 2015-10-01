@@ -1,9 +1,12 @@
 require_relative '../core/service'
+require_relative '../console/mode'
 require 'monitor'
 
 class HeartBeatService < Service
 
     provided_features :heartbeat
+
+    attr_reader :counter
 
     def init
         @counter = 0
@@ -12,7 +15,7 @@ class HeartBeatService < Service
         @observers_monitor = Monitor.new
     end
 
-    def start(beat_count = -1, sleep_interval = 1)
+    def start(beat_count = -1, sleep_interval = 5)
         @running = true
 
         while @running and (beat_count < 0 or beat_count > 0) do
@@ -21,6 +24,8 @@ class HeartBeatService < Service
                     observer[0].send observer[1]
                 end
             end
+
+	    @counter += 1
 
             sleep sleep_interval
             beat_count -= 1 if beat_count > 0
@@ -72,11 +77,28 @@ class HeartBeatListener < Service
             @heartbeat = service
         when :console
             if service.nil? 
+		@console.unregister_mode(HeartBeatMode)
+		@console = nil
             else
                 @console = service
-#                @console.register_command(:core, Command.new(:heartbeat_counter, "count beats", "Show heartbeat count", {}) { puts "registered yay" })
+		@console.register_mode(HeartBeatMode)
             end
         end
     end
 end
 
+class HeartBeatMode < BaseMode
+
+	mode_id :heartbeat
+	access_from :debug, "heartbeat", "Enter heartbeat management mode"
+
+	register_command(:count_heartbeat, "count", "Show current heartbeat count")
+	register_command(:exit_mode, "exit", "Exit current mode") { |intp| intp.modes.exit_mode }
+	register_command(:force_unregister, "unregister", "WTF") { |framework| framework.service(:console).unregister_mode(HeartBeatMode) }
+
+	def count_heartbeat(out, framework)
+		service = framework.service(:heartbeat)
+		count = service.counter unless service.nil?
+		out.puts "Current heartbeat count: #{count}"
+	end
+end

@@ -18,8 +18,8 @@ class Framework < Service
         @core.shutdown
     end
 
-    def service(feature)
-        @core.service_registry.find(feature).service
+    def service(spec = ServiceRegistry::SERVICE_FEATURE, &blk)
+        @core.service_registry.find(spec, &blk).service
     end
 
     def register_service(id, service, features = nil)
@@ -30,8 +30,8 @@ class Framework < Service
 
     end
 
-    def find_services
-        @core.service_registry.find_all
+    def find_services(spec = ServiceRegistry::SERVICE_FEATURE, &blk)
+        @core.service_registry.find_all spec, &blk
     end
 
     def start_service(service_id)

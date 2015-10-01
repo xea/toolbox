@@ -71,6 +71,12 @@ class Interpreter
         end
     end
 
+    def unregister_mode(mode)
+	if !mode.nil? and mode.ancestors.member? BaseMode
+            @modes.unregister_mode mode
+	end
+    end
+
     # Attempts to find an request handler for the current input. It might return nil when there's no 
     # corresponding handler to the input or it might return a command object containing the vital 
     # information to react

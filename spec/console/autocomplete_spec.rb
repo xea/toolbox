@@ -20,6 +20,10 @@ RSpec.describe Autocomplete do
         def build_context
             {}
         end
+
+	def current_accessors
+		[]
+	end
     end
 
     class TestLocalMode < BaseMode
@@ -28,6 +32,10 @@ RSpec.describe Autocomplete do
         register_command(:inline_command, "inline", "help") {}
         register_command(:include_command, "include", "help") {}
         register_command(:incline_command, "incline", "help") {}
+
+	def current_accessors
+		[]
+	end
     end
 
     class TestGlobalMode < BaseMode

@@ -68,8 +68,8 @@ class ConsoleService < SimpleService
         @console.interpreter.register_mode mode, :local
     end
 
-    def unregister_mode
-        # TODO this operation is currently unsupported
+    def unregister_mode(mode)
+	@console.interpreter.unregister_mode mode
     end
 
     def register_command(mode_id, command)
@@ -79,6 +79,7 @@ class ConsoleService < SimpleService
     end
 
     def unregister_command(mode_id, command_id)
+        # TODO this operation is currently unsupported
     end
 
 end

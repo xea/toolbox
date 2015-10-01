@@ -22,6 +22,16 @@ class ModeRegistry
         end
     end
 
+    # Unregister a previously registered mode class
+    def unregister_mode(mode)
+	if @modes.has_key? mode.id
+            if current_mode.mode_id == mode.id
+		exit_mode
+	    end
+            @modes.delete mode.id
+	end
+    end
+
     # Register a new global mode class, replacing the previous instance if there was one.
     def register_global_mode(mode)
         unless mode.nil?

@@ -84,7 +84,7 @@ class BaseMode
         { visible: visibility, filter: scope_filter }
     end
 
-    def self.access(parent_mode_id, access_command, access_command_description)
+    def self.access_from(parent_mode_id, access_command, access_command_description)
         access_command = Command.new("mode_accessor_#{parent_mode_id}_#{self.id}".to_sym, access_command, access_command_description, {}) { |intp| intp.modes.enter_mode self.id }
         @traits[:mode_accessors] << { parent: parent_mode_id, command: access_command }
     end
