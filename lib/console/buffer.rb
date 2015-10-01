@@ -81,18 +81,26 @@ class LineBuffer
 	def cursor_down(n = 1)
 	end
 
+  # Moves cursor to the left by n characters. If the requested position is past the beginning of the buffer then
+  # it stops at the first (0) index
 	def cursor_left(n = 1)
-		if @idx > 0
-			@idx -= 1
-			return CHAR_LEFT
+    cn = [ @idx, n ].min
+
+		if cn > 0
+			@idx -= cn
+			return CHAR_LEFT * cn
 		end
     ""
 	end
 
+  # Moves cursor to the right by n characters. If the requested position is past the end of the buffer then it stops at
+  # the last index
 	def cursor_right(n = 1)
+    cn = [ @chars.length - @idx, n ].min
+
 		if @idx < @chars.length
-			@idx += 1
-			return CHAR_RIGHT
+			@idx += cn
+			return CHAR_RIGHT * cn
 		end
     ""
 	end
