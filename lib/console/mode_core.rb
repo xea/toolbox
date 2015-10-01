@@ -14,11 +14,11 @@ class ModeCore < BaseMode
     end
 
     def list_features(out, framework)
-        out.puts @table.print([ "ID", "Features" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, (descriptor.features - [:service]).join(",") ] })
+        out.puts @table.print([ "ID", "FEATURES" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, (descriptor.features - [:service]).join(",") ] })
     end
 
     def list_services(out, framework)
-        out.puts @table.print([ "ID", "State" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, descriptor.service.state ] } )
+        out.puts @table.print([ "ID", "STATE" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, descriptor.service.state ] } )
     end
 
     def direct_shutdown(framework, reason = nil)
