@@ -9,7 +9,7 @@ module ServiceRegistry
     DEFAULT_PRIORITY = 4
 
     # Register a new service object along with it's feature set
-    def register_service(id, service, features = [], options = { autostart: true, priority: DEFAULT_PRIORITY })
+    def register_service(id, service, features = [], options = { autostart: true, priority: DEFAULT_PRIORITY }, &registration_callback)
         unless service_registry.has_key? id
             service.service_id = id
             features = service.provided_features if features.nil?
@@ -20,7 +20,10 @@ module ServiceRegistry
             service_registry[id] = ServiceRegistration.new(id, service, features, options)
 
             # Optional callback method notifying the listener that the registration has completed
-            service_registered service_registry[id] if respond_to? :service_registered, true
+            registration = service_registered service_registry[id] if respond_to? :service_registered, true
+            registration_callback.call registration unless registration_callback.nil?
+
+            registration
         else
             raise "Service with id #{id} has been registered"
         end
@@ -81,4 +84,5 @@ class LocalServiceRegistry
         registration.service.set_state_installed
         registration
     end
+
 end

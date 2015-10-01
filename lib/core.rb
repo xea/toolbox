@@ -79,7 +79,9 @@ class Core
 
             unless current_stage.nil?
                 registrations = current_stage.map do |service_registration_request|
-                    @service_registry.register_service(*service_registration_request)
+                    @service_registry.register_service(*service_registration_request) { |registration|
+                        registration.service.set_state_resolved if has_required_dependencies? registration.service
+                    }
                 end
 
                 registrations.each do |registration|
@@ -95,21 +97,29 @@ class Core
         end
     end
 
+    def has_all_dependencies?(service)
+        !((service.required_features + service.optional_features).map { |feature| service_registry.find feature }.member? nil)
+    end
+
+    def has_required_dependencies?(service)
+        !(service.required_features.map { |feature| service_registry.find feature }.member? nil)
+    end
+
     def start_service(service_registration)
         service = service_registration[:service]
 
-        if service.state? RunState::INSTALLED
+        if service.state? RunState::RESOLVED
             service.set_state_starting
 
             required_services, optional_services = [ :required_features, :optional_features ].map { |type|
-                Hash[*(service.send(type).map { |feature| [ feature, @service_registry.find(feature)]}).flatten]
+                Hash[*(service.send(type).map { |feature| [ feature, @service_registry.find(feature) ]}).flatten]
             }
 
             if required_services.has_value? nil
                 raise "Can't start service #{service.service_id} because a mandatory feature dependency #{service.required_features} cannot be satisfied"
             else
                 (required_services.merge optional_services).each do |feature, dependency|
-                    if dependency.service.state? RunState::INSTALLED
+                    if dependency.service.state? RunState::RESOLVED
                         start_service dependency
                     end
 
@@ -129,9 +139,24 @@ class Core
         if service.state? RunState::ACTIVE
             service.set_state_stopping
 
-            # TODO implement me
-            
-            service.set_state_stopped
+            dependant_services_req = service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.required_features.member? feature } }.reduce(:+)
+            dependant_services_opt = service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.optional_features.member? feature } }.reduce(:+)
+
+            dependant_services_req.each do |service_registration|
+                stop_service(service_registration)
+            end
+
+            dependant_services_opt.each do |dependant|
+                # TODO remove dependency
+            end
+
+            service.stop
+
+            if has_required_dependencies?(service)
+                service.set_state_resolved
+            else
+                service.set_state_installed
+            end
         end
     end
 

@@ -33,5 +33,15 @@ class Framework < Service
     def find_services
         @core.service_registry.find_all
     end
+
+    def start_service(service_id)
+        service_registration = @core.service_registry.find { |service| service.service_id == service_id.to_sym }
+        @core.start_service service_registration unless service_registration.nil?
+    end
+
+    def stop_service(service_id)
+        service_registration = @core.service_registry.find { |service| service.service_id == service_id.to_sym }
+        @core.stop_service service_registration unless service_registration.nil?
+    end
 end
 
