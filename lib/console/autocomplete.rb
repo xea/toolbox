@@ -53,7 +53,7 @@ class Autocomplete
     end
 
     def find_possible_commands(input, mode, pos)
-        local_commands = mode.available_commands
+        local_commands = mode.available_commands + @interpreter.modes.current_accessors
         global_commands = @interpreter.modes.global_mode.available_commands
 
         # build a list of commands that are available from the current mode

@@ -76,7 +76,7 @@ class ServiceProxy
             raise "Registering nil service is not allowed"
         elsif dispatcher.nil?
             raise "Registering nil dispatcher is not allowed"
-        elsif !service.kind_of? Service
+        elsif !service.kind_of? SimpleService
             raise "Registering nil object is not allowed"
         elsif !dispatcher.kind_of? Dispatcher
             raise "Registering nil dispatcher is not allowed"

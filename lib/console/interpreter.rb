@@ -75,7 +75,8 @@ class Interpreter
     # corresponding handler to the input or it might return a command object containing the vital 
     # information to react
     def find_command(input)
-        @modes.active_modes.map { |mode| mode.find_command(input) }.find { |command| !command.nil? }
+        available_accessors = @modes.current_accessors.find_all { |accessor| accessor.signature.matches? input }
+        (@modes.active_modes.map { |mode| mode.find_command(input) } + available_accessors).find { |command| !command.nil? }
     end
 
     def extract_user_args(command, input)

@@ -84,4 +84,8 @@ class ModeRegistry
         modes
     end
 
+    def current_accessors
+        @modes.map { |mode_id, mode| mode.traits[:mode_accessors].find_all { |accessor| accessor[:parent] == current_mode.mode_id } }.flatten.map { |accessor| accessor[:command] }
+    end
+
 end

@@ -154,7 +154,7 @@ class Console
         end
 
         local_header = [ " Local commands" ]
-        local_commands = @interpreter.modes.current_mode.available_commands.map { |cmd| [ cmd.signature.to_readable, cmd.description ] }
+        local_commands = (@interpreter.modes.current_mode.available_commands + @interpreter.modes.current_accessors).map { |cmd| [ cmd.signature.to_readable, cmd.description ] }
 
         global_header = [ " Global commands" ]
         global_commands = @interpreter.modes.global_mode.available_commands.map { |cmd| [ cmd.signature.to_readable, cmd.description ] }

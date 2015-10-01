@@ -63,4 +63,22 @@ class ConsoleService < SimpleService
     def process_input(raw_input)
         @console.process_input raw_input
     end
+
+    def register_mode(mode)
+        @console.interpreter.register_mode mode, :local
+    end
+
+    def unregister_mode
+        # TODO this operation is currently unsupported
+    end
+
+    def register_command(mode_id, command)
+        mode = @console.interpreter.modes.mode(mode_id)
+
+        binding.pry
+    end
+
+    def unregister_command(mode_id, command_id)
+    end
+
 end

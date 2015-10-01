@@ -17,7 +17,7 @@ class BaseMode
         arr.each do |a|
             metaclass.instance_eval do
                 define_method( a ) do |val|
-                    @traits ||= { mode_id: to_s.to_sym, commands: {}, tables: {}, filters: {} }
+                    @traits ||= { mode_id: to_s.to_sym, commands: {}, tables: {}, filters: {}, mode_accessors: [] }
                     @traits[a] = val
                 end
             end
@@ -66,7 +66,7 @@ class BaseMode
     end
 
     # Mode attributes
-    traits :mode_id, :commands, :tables, :filters, :reset_traits
+    traits :mode_id, :commands, :tables, :filters, :reset_traits, :mode_accessors
 
     def self.register_command(cmd_id, cmd_pattern, cmd_desc = "<No description>", cmd_options = {}, &cmd_blk)
         @traits[:commands][cmd_id] = Command.new(cmd_id, cmd_pattern, cmd_desc, cmd_options, &cmd_blk)
@@ -82,6 +82,11 @@ class BaseMode
 
     def self.scope(visibility = true, &scope_filter)
         { visible: visibility, filter: scope_filter }
+    end
+
+    def self.access(parent_mode_id, access_command, access_command_description)
+        access_command = Command.new("mode_accessor_#{parent_mode_id}_#{self.id}".to_sym, access_command, access_command_description, {}) { |intp| intp.modes.enter_mode self.id }
+        @traits[:mode_accessors] << { parent: parent_mode_id, command: access_command }
     end
 
     # Tries to find a command where the current input matches the command pattern
