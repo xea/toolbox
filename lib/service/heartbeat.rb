@@ -8,15 +8,16 @@ class HeartBeatService < Service
     @observers = []
   end
 
-  def start
+  def start(beat_count = -1, sleep_interval = 5)
     @running = true
 
-    while @running do
+    while @running and (beat_count < 0 or beat_count > 0)do
       @observers.each do |observer|
         observer[0].send observer[1]
       end
 
-      sleep 5
+      sleep sleep_interval
+      beat_count -= 1 if beat_count > 0
     end
   end
 
@@ -30,6 +31,8 @@ class HeartBeatService < Service
 end
 
 class HeartBeatListener < Service
+
+    attr_accessor :counter
 
   required_features :heartbeat
 

@@ -8,34 +8,6 @@ require_relative "console/autocomplete"
 
 require_relative "console/mode_core"
 
-=begin
-class ConsoleService < Service
-
-    include RunState
-
-    required_features :logger 
-    optional_features :framework
-
-    def initialize
-        super
-
-        @console = Console.new
-    end
-
-    def start
-        @logger.info "Starting console service"
-
-        @console.interpreter.register_mode ModeCore, :local
-        @console.interpreter.register_helper :framework, @framework
-        @console.start
-    end
-
-    def stop
-        @console.stop
-        @logger.info "Console service stopped"
-    end
-end
-=end
 # Enables user-interaction with the framework via keyboard inputs
 class Console 
 

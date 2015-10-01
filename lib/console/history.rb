@@ -45,6 +45,7 @@ class History
         @history[0]
     end
 
+    # Remove the contents of this history object and re-reads the contents from the specified file if possible
     def reset(filename)
         @history = []
         @history_idx = -1
@@ -53,13 +54,17 @@ class History
             @history = File.readlines(filename).map { |l| l.rstrip }.reverse
         end
 
-        @backend = File.open filename, "a+"
+        @backend = File.open filename, "a+" unless filename.nil?
     end
 
     def clear
-        @backend.close
-        File.delete @backend.path
-        reset @backend.path
+        if @backend.nil?
+            reset nil
+        else
+            @backend.close
+            File.delete @backend.path
+            reset @backend.path
+        end
     end
 end
 
