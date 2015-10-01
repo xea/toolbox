@@ -16,7 +16,7 @@ class Interpreter
         @modes = ModeRegistry.new
         @tables = {}
         @state = InterpreterState.new(@modes, @tables)
-        @helpers = { intp: @state }
+        @helpers = { intp: @state, out: STDOUT }
 
         unless pure
             register_mode ModeGlobal, :global

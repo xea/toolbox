@@ -1,6 +1,22 @@
 
 class PrinTable
 
+    def initialize(style = :simple)
+        @default_style = style
+    end
+
+    def print(headers, data, style = @default_style)
+        a_headers = headers || @header_cache
+        a_data = data || @data_cache
+
+        result = print_table(a_headers, a_data, style)
+
+        @header_cache = a_headers
+        @data_cache = a_data
+
+        result
+    end
+
     def print_table(headers, data, style = nil)
         case style
         when :raw
