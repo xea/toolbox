@@ -10,13 +10,14 @@ class ModeCore < BaseMode
     register_command(:start_service, "start :service_id", "Start service")
     register_command(:stop_service, "stop :service_id", "Stop service")
     register_command(:direct_shutdown, "shutdown", "Initiate direct shutdown")
+    register_command(:exit_mode, "exit", "Exit current mode") { |intp| intp.modes.exit_mode }
 
     def construct
         @table = PrinTable.new
     end
 
     def list_features(out, framework)
-        out.puts @table.print([ "ID", "FEATURES" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, (descriptor.features - [:service]).join(",") ] })
+        out.puts @table.print([ "ID", "PROVIDED", "REQUIRED", "OPTIONAL" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, (descriptor.features - [:service]).join(","), descriptor.service.required_features.join(','), descriptor.service.optional_features.join(',') ] })
     end
 
     def list_services(out, framework)
