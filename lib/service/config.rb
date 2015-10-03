@@ -8,7 +8,7 @@ class ConfigService < Service
     optional_features :logger, :console
     provided_features :config 
 
-    def initialize(filename)
+    def initialize(filename = nil)
         super
         @source = filename
         @config_monitor = Monitor.new
@@ -48,8 +48,10 @@ class ConfigService < Service
             spawn_cfg[key] = value
             @cached_data[spawn_id] = spawn_cfg
 
-            File.open(@source, "w+") do |file|
-                file.write(@cached_data.to_yaml)
+            unless @source.nil?
+                File.open(@source, "w+") do |file|
+                    file.write(@cached_data.to_yaml)
+                end
             end
         end
     end
