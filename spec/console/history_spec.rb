@@ -14,6 +14,10 @@ RSpec.describe History do
         @history_f = History.new TEST_PATH
     end
 
+    after :all do
+        File.delete TEST_PATH
+    end
+
     context '#initialise' do
         it 'should initialise an empty history when no filename was specified' do
             expect(@history.current).to eq([-1, nil])

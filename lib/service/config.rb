@@ -15,9 +15,10 @@ class ConfigService < Service
     end
 
     def stop
-        @console.unregister_mode ConfigMode
+        @console.unregister_mode ConfigMode unless @console.nil?
     end
 
+    # Create a config proxy object for each instance invocation
     def spawn_new(spawn_id = nil)
         reload
         ConfigProxy.new spawn_id, self
