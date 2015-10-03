@@ -87,6 +87,10 @@ class ConfigProxy < SimpleService
         @service = service
     end
 
+    def values
+        self
+    end
+
     def [](key)
         @service.get(@spawn_id, key)
     end

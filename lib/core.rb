@@ -46,6 +46,7 @@ class Core
             # Stage 2: Console host level
             register_service :console_host, ConsoleHostService.new(STDIN, STDOUT, STDERR)
             commit_stage
+
         end
     end
 

@@ -85,7 +85,8 @@ class ServiceProxy
         elsif !dispatcher.kind_of? Dispatcher
             raise "Registering nil dispatcher is not allowed"
         else
-            local_methods = service.methods - Service.instance_methods
+            reserved_methods = [ :[], :[]= ]
+            local_methods = service.methods - (Service.instance_methods - reserved_methods)
             proxy = ServiceProxy.new
 
             # for each service method we define a singleton method that generates ServiceRequest objects instead
