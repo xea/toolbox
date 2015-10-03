@@ -3,8 +3,9 @@ require_relative 'core/service_registration'
 require_relative 'core/service_registry'
 require_relative 'core/state'
 require_relative 'service/framework'
-require_relative 'service/heartbeat'
+require_relative 'service/config'
 require_relative 'service/console'
+require_relative 'service/heartbeat'
 require 'thread'
 require 'monitor'
 require 'pry'
@@ -38,7 +39,11 @@ class Core
             register_service :framework, @framework
             commit_stage
 
-            # Stage 1: Console host level
+            # Stage 1: Configuration service
+            register_service :config, ConfigService.new("config/config.yml")
+            commit_stage
+
+            # Stage 2: Console host level
             register_service :console_host, ConsoleHostService.new(STDIN, STDOUT, STDERR)
             commit_stage
         end
@@ -119,16 +124,27 @@ class Core
                 raise "Can't start service #{service.service_id} because a mandatory feature dependency #{service.required_features} cannot be satisfied"
             else
                 (required_services.merge optional_services).each do |feature, dependency|
-                    if dependency.service.state? RunState::RESOLVED
-                        start_service dependency
-                    end
+                    unless dependency.nil?
+                        if dependency.service.state? RunState::RESOLVED
+                            start_service dependency
+                        end
 
-                    proxy = ServiceProxy.consume dependency.service, self
-                    service.feature_up feature, proxy
+                        proxy = ServiceProxy.consume dependency.service.spawn_new(service.service_id), self
+                        service.feature_up feature, proxy
+                    end
                 end
 
                 service.async.start
                 service.set_state_active
+
+                # Post-activate optional dependencies
+                @service_registry.find_all { |srv| srv.state == RunState::ACTIVE and srv.optional_features.find_all { |feature| service.provided_features.member? feature}.length > 0 }.each do |opt_dependency|
+                    opt_dependency.service.optional_features.find_all { |feature| service.provided_features.member? feature }.each do |feature| 
+                        puts "optional injection: #{feature} to #{opt_dependency.service.service_id}"
+                        proxy = ServiceProxy.consume service.spawn_new(opt_dependency.service.service_id), self
+                        opt_dependency.service.feature_up feature, proxy
+                    end
+                end
             end
         end
     end

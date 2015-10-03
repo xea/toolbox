@@ -77,11 +77,11 @@ class HeartBeatListener < Service
             @heartbeat = service
         when :console
             if service.nil? 
-		@console.unregister_mode(HeartBeatMode)
-		@console = nil
+                @console.unregister_mode(HeartBeatMode)
+                @console = nil
             else
                 @console = service
-		@console.register_mode(HeartBeatMode)
+                @console.register_mode(HeartBeatMode)
             end
         end
     end

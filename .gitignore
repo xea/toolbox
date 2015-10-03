@@ -2,6 +2,7 @@
 *.iml
 *.history
 *.swp
+*.swo
 *.tmp
 *.gem
 *.rbc

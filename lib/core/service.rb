@@ -24,6 +24,10 @@ class SimpleService
     def destroy
     end
 
+    def spawn_new(spawn_id = nil)
+        self
+    end
+
     def feature_up(feature, service)
         instance_variable_set("@#{feature.to_s}", service)
     end

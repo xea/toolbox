@@ -69,7 +69,7 @@ class ConsoleService < SimpleService
     end
 
     def unregister_mode(mode)
-	@console.interpreter.unregister_mode mode
+        @console.interpreter.unregister_mode mode
     end
 
     def register_command(mode_id, command)
@@ -80,6 +80,10 @@ class ConsoleService < SimpleService
 
     def unregister_command(mode_id, command_id)
         # TODO this operation is currently unsupported
+    end
+
+    def register_helper(helper_id, helper)
+        @console.interpreter.register_helper helper_id, helper
     end
 
 end

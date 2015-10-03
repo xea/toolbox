@@ -72,9 +72,9 @@ class Interpreter
     end
 
     def unregister_mode(mode)
-	if !mode.nil? and mode.ancestors.member? BaseMode
+        if !mode.nil? and mode.ancestors.member? BaseMode
             @modes.unregister_mode mode
-	end
+        end
     end
 
     # Attempts to find an request handler for the current input. It might return nil when there's no 

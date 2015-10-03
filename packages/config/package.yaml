@@ -1,0 +1,10 @@
+id: config
+name: Configuration service
+stages:
+    - default
+services:
+    config:
+        id: config
+        class: ConfigService
+        source: config.rb
+        stage: default
