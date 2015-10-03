@@ -67,6 +67,10 @@ end
 
 class Service < SimpleService
     include Celluloid
+
+    def current_actor
+        Actor.current
+    end
 end
 
 # A placeholder proxy for a service object that intercepts method invocations on the service object and
@@ -85,7 +89,7 @@ class ServiceProxy
         elsif !dispatcher.kind_of? Dispatcher
             raise "Registering nil dispatcher is not allowed"
         else
-            reserved_methods = [ :[], :[]= ]
+            reserved_methods = [ :[], :[]=, :async, :service_id ]
             local_methods = service.methods - (Service.instance_methods - reserved_methods)
             proxy = ServiceProxy.new
 
@@ -99,6 +103,7 @@ class ServiceProxy
             end
 
             proxy
+            service
         end
     end
 end

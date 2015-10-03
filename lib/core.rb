@@ -188,6 +188,8 @@ class Core
     def commit_stage
         @stage_monitor.synchronize do
             @service_stages << @current_stage unless @current_stage.empty?
+            @stage_counter ||= 0
+            @stage_counter += 1
             @current_stage = []
         end
     end

@@ -57,12 +57,12 @@ class HeartBeatListener < Service
     optional_features :console
 
     def start
-        @heartbeat.subscribe self, :beat
+        @heartbeat.subscribe current_actor, :beat
         @counter = 0
     end
 
     def stop
-        @heartbeat.unsubscribe self
+        @heartbeat.unsubscribe current_actor
     end
 
     def beat(loud = false)

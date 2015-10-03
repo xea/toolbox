@@ -1,0 +1,4 @@
+id: Healthcheck
+services:
+    healthchecker:
+        class: HealthChecker
