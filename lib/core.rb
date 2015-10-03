@@ -6,6 +6,7 @@ require_relative 'service/framework'
 require_relative 'service/config'
 require_relative 'service/console'
 require_relative 'service/heartbeat'
+require_relative 'service/logger'
 require 'thread'
 require 'monitor'
 require 'pry'
@@ -39,11 +40,15 @@ class Core
             register_service :framework, @framework
             commit_stage
 
-            # Stage 1: Configuration service
+            # Stage 1: Core logger
+            register_service :corelog, LoggerService.new
+            commit_stage
+
+            # Stage 2: Configuration service
             register_service :config, ConfigService.new("config/config.yml")
             commit_stage
 
-            # Stage 2: Console host level
+            # Stage 3: Console host level
             register_service :console_host, ConsoleHostService.new(STDIN, STDOUT, STDERR)
             commit_stage
         end

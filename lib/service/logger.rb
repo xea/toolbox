@@ -4,6 +4,8 @@ require 'time'
 # Very simplistic logging service. Accepts any target that has the puts and print methods.
 class LoggerService < Service
 
+    provided_features :logger
+
     def initialize(target = STDOUT)
         super
         # only accept the target if we can log into it
