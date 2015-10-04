@@ -31,26 +31,36 @@ class Core
         @service_monitor = Monitor.new
         @event_queue = Queue.new
         @service_registry = LocalServiceRegistry.new
+        @supervisor = SupervisorCompanion.new self
 
         # Setting pure to true will keep core from registering a new framework by default
         unless pure
-            @framework = Framework.new(self)
+            @framework = new_service(:framework, Framework, self)
 
             # Stage 0: Framework level
             register_service :framework, @framework
             commit_stage
 
             # Stage 1: Core logger
-            register_service :corelog, LoggerService.new
+            register_service :corelog, new_service(:corelog, LoggerService)
             commit_stage
 
             # Stage 2: Configuration service
-            register_service :config, ConfigService.new("config/config.yml")
+            register_service :config, new_service(:config, ConfigService, "config/config.yml")
             commit_stage
 
             # Stage 3: Console host level
-            register_service :console_host, ConsoleHostService.new(STDIN, STDOUT, STDERR)
+            register_service :console_host, new_service(:console_host, ConsoleHostService, STDIN, STDOUT, STDERR)
             commit_stage
+
+        end
+    end
+
+    def new_service(service_class, *args, &blk)
+        if service_class.include? Celluloid
+            @supervisor.supervise(service_id, service_class, *args, &blk)
+        else
+            service_class.new(*args, &blk)
         end
     end
 
@@ -187,6 +197,8 @@ class Core
     def commit_stage
         @stage_monitor.synchronize do
             @service_stages << @current_stage unless @current_stage.empty?
+            @stage_counter ||= 0
+            @stage_counter += 1
             @current_stage = []
         end
     end
@@ -249,3 +261,25 @@ protected
     end
 end
 
+class SupervisorCompanion
+
+    include Celluloid
+
+    trap_exit :actor_died
+
+    def initialize(core)
+        @core = core
+        # Not sure if this is really needed
+        @supervisors = []
+    end
+
+    def supervise(service_id, service_class, *args, &blk)
+        sv = service_class.supervise(as: service_id, args: args)
+        @supervisors << sv unless @supervisors.member? sv
+        sv.actors.last
+    end
+
+    def actor_died(actor, error)
+        puts "An actor has died #{actor} #{error}"
+    end
+end
