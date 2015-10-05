@@ -28,16 +28,4 @@ RSpec.describe LoggerService do
         @logger = LoggerService.new @target
     end
 
-    context "#initialize" do
-        it "should use the standard output unless it is told otherwise" do
-            expect { LoggerService.new }.to_not raise_error
-        end
-
-        it "should accept a target and use that target for subsequent logging" do
-            @logger.info "test message" 
-            expect(@target.buffer.length).to eq(1)
-            expect(@target.buffer.last.end_with? "test message").to be(true)
-        end
-    end
-
 end
