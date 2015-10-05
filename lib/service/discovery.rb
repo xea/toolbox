@@ -32,43 +32,12 @@ class DiscoveryService < Service
                 @logger.error "Error caught during package discovery #{e.message}"
             end
         end
-
-=begin
-        @watch_thread = Thread.new do 
-            stop = false
-
-            while !stop do
-                stop = stop_requested?
-
-                begin
-                    scan_packages
-                rescue => e
-                    p e.backtrace.join("\n")
-                    @logger.error "Error caught during package discovery #{e.message}"
-                end
-
-                i = @config['sleep_interval'] || 5
-                sleep i
-            end
-        end
-=end
     end
 
     def stop
         @scanner.cancel
 #        @watch_queue << :stop
 #        @watch_thread.join unless @watch_thread.nil?
-    end
-
-    def stop_requested?
-        if @watch_queue.length > 0
-            event = @watch_queue.pop
-
-            case event
-            when :stop
-                true
-            end
-        end
     end
 
     def scan_packages
@@ -94,12 +63,15 @@ class DiscoveryService < Service
 
         if File.exist? @watch_dir and File.directory? @watch_dir
             removed_entries = @package_db[:installed].keys - Dir.entries(@watch_dir)
-            puts "Removed packages: #{removed_entries}"
+            @logger.debug "Removed packages: #{removed_entries}"
             # TODO actually remove packages
         end
     end
 
     def scan_package(package_name)
+        # ignore locked packages
+        return if File.exist? "#{@watch_dir}/#{package_name}/.lock"
+
         package_descriptor = "#{@watch_dir}/#{package_name}/package.yaml"
 
         if File.exist? package_descriptor
@@ -140,13 +112,12 @@ class DiscoveryService < Service
                     @logger.debug "Trying to register service #{pkg_service_id}"
                     service_class = Kernel.const_get(pkg_service['class'].to_sym)
                     service = service_class.new
-                    @framework.register_service pkg_service, service
+                    @framework.register_service(pkg_service, service) 
                     @logger.info "Registered new package service #{pkg_service_id}"
                 rescue => e
                     @logger.error e.message
                 end
             end
-
         else
             @logger.debug "Package #{internal_id} is already installed. Skipping"
         end
