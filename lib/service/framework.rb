@@ -19,7 +19,8 @@ class Framework < Service
     end
 
     def service(spec = ServiceRegistry::SERVICE_FEATURE, &blk)
-        @core.service_registry.find(spec, &blk).service
+        service_candidate = @core.service_registry.find(spec, &blk)
+        service_candidate.service unless service_candidate.nil?
     end
 
     def register_service(id, service, features = nil)

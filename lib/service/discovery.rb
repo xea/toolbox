@@ -6,6 +6,9 @@ class DiscoveryService < Service
 
     DEFAULT_WATCH_DIR = "packages"
 
+    # Check packages every 5 seconds by default
+    DEFAULT_SCAN_INTERVAL = 5  
+
     required_features :framework, :config
     optional_features :logger
     provided_features :discovery
@@ -18,6 +21,17 @@ class DiscoveryService < Service
         watch_dir = @config['watch_dir'] || DEFAULT_WATCH_DIR
         @watch_dir = watch_dir
         @watch_queue = Queue.new
+
+        interval = @config['sleep_interval'] || DEFAULT_SCAN_INTERVAL
+
+        @scanner = every(interval) do
+            begin
+                scan_packages
+            rescue => e
+                p e.backtrace.join("\n")
+                @logger.error "Error caught during package discovery #{e.message}"
+            end
+        end
 
 =begin
         @watch_thread = Thread.new do 
@@ -38,6 +52,12 @@ class DiscoveryService < Service
             end
         end
 =end
+    end
+
+    def stop
+        @scanner.cancel
+#        @watch_queue << :stop
+#        @watch_thread.join unless @watch_thread.nil?
     end
 
     def stop_requested?
@@ -106,16 +126,11 @@ class DiscoveryService < Service
                 begin
                     service_class = Kernel.const_get(pkg_service['class'].to_sym)
                     service = service_class.new
-                    @framework.async.register_service pkg_service, service
+                    @framework.register_service pkg_service, service
                 rescue => e
                     @logger.error e.message
                 end
             end
         end
-    end
-
-    def stop
-        @watch_queue << :stop
-        @watch_thread.join unless @watch_thread.nil?
     end
 end

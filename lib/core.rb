@@ -2,6 +2,7 @@ require_relative 'core/service'
 require_relative 'core/service_registration'
 require_relative 'core/service_registry'
 require_relative 'core/state'
+require_relative 'core/supervisor'
 require_relative 'service/framework'
 require_relative 'service/config'
 require_relative 'service/console'
@@ -16,6 +17,8 @@ require 'pry'
 # Instances of this class should not be directly exposed to modules, it's functionality should be accessed through Framework
 # instances instead.
 class Core
+
+    DEFAULT_CORE_LOGFILE = 'log/core.log'
 
     attr_reader :event_queue, :framework, :service_registry, :system_name
 
@@ -35,27 +38,27 @@ class Core
 
         # Setting pure to true will keep core from registering a new framework by default
         unless pure
-            @framework = new_service(:framework, Framework, self)
-
             # Stage 0: Framework level
-            register_service :framework, @framework
+            register_service :framework, Framework, self
             commit_stage
 
             # Stage 1: Core logger
-            register_service :corelog, new_service(:corelog, LoggerService)
+            register_service :corelog, LoggerService, DEFAULT_CORE_LOGFILE
             commit_stage
 
             # Stage 2: Configuration service
-            register_service :config, new_service(:config, ConfigService, "config/config.yml")
+            register_service :config, ConfigService, "config/config.yml"
             commit_stage
 
             # Stage 3: Console host level
-            register_service :console_host, new_service(:console_host, ConsoleHostService, STDIN, STDOUT, STDERR)
+            register_service :console_host, ConsoleHostService, STDIN, STDOUT, STDERR
             commit_stage
+
+            @framework = @supervisor[:framework]
         end
     end
 
-    def new_service(service_class, *args, &blk)
+    def new_service(service_id, service_class, *args, &blk)
         if service_class.include? Celluloid
             @supervisor.supervise(service_id, service_class, *args, &blk)
         else
@@ -63,13 +66,14 @@ class Core
         end
     end
 
-    def register_service(service_id, service, features = nil)
+    def register_service(service_id, service, *service_args)
         # Make sure we've got an initialised service object here
-        service_object = service.kind_of?(Class) ? service.new : service
+        service_object = service.kind_of?(Class) ? new_service(service_id, service, *service_args) : service
+        # TODO service object initialisation error handling
         service_object.init
 
         # TODO revise the data type of service registration requests but they are good as arrays for now
-        service_registration_request = [ service_id, service, features ] 
+        service_registration_request = [ service_id, service_object, service_object.provided_features ] 
 
         @stage_monitor.synchronize do
             @current_stage << service_registration_request
@@ -223,14 +227,13 @@ class Core
         # if console service is available
 
         console = @framework.service :console
+        main_thread = Thread.current
         
         if console.nil?
             # No console service present, looping on main thread
             event_loop(main_thread)
         else
             # Console service found, starting console on the foreground event loop on background thread
-            main_thread = Thread.current
-
             begin
                 @event_thread = Thread.new do
                     event_loop(main_thread)
@@ -260,25 +263,3 @@ protected
     end
 end
 
-class SupervisorCompanion
-
-    include Celluloid
-
-    trap_exit :actor_died
-
-    def initialize(core)
-        @core = core
-        # Not sure if this is really needed
-        @supervisors = []
-    end
-
-    def supervise(service_id, service_class, *args, &blk)
-        sv = service_class.supervise(as: service_id, args: args)
-        @supervisors << sv unless @supervisors.member? sv
-        sv.actors.last
-    end
-
-    def actor_died(actor, error)
-        puts "An actor has died #{actor} #{error}"
-    end
-end

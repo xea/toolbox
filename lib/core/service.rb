@@ -103,7 +103,7 @@ class ServiceProxy
             end
 
             proxy
-            service
+#            service
         end
     end
 end

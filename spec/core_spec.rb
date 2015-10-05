@@ -84,7 +84,7 @@ RSpec.describe Core do
             expect(@pure_core.current_stage[0]).to be_a(Array)
             expect(@pure_core.current_stage[0][0]).to eq(:test_service)
             expect(@pure_core.current_stage[0][1]).to eq(@test_service)
-            expect(@pure_core.current_stage[0][2]).to eq(nil)
+            expect(@pure_core.current_stage[0][2]).to eq([:test])
         end
 
         it "should return the id of the newly registered service" do
