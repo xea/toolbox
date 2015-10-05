@@ -67,6 +67,7 @@ end
 
 class Service < SimpleService
     include Celluloid
+
 end
 
 # A placeholder proxy for a service object that intercepts method invocations on the service object and

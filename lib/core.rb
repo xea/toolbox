@@ -34,33 +34,39 @@ class Core
 
         # Setting pure to true will keep core from registering a new framework by default
         unless pure
-            @framework = Framework.new(self)
-
             # Stage 0: Framework level
-            register_service :framework, @framework
+            register_service :framework, Framework, self
             commit_stage
 
             # Stage 1: Core logger
-            register_service :corelog, LoggerService.new
+            register_service :corelog, LoggerService
             commit_stage
 
             # Stage 2: Configuration service
-            register_service :config, ConfigService.new("config/config.yml")
+            register_service :config, ConfigService, "config/config.yml"
             commit_stage
 
             # Stage 3: Console host level
-            register_service :console_host, ConsoleHostService.new(STDIN, STDOUT, STDERR)
+            register_service :console_host, ConsoleHostService, STDIN, STDOUT, STDERR
             commit_stage
         end
     end
 
-    def register_service(service_id, service, features = nil)
+    def new_service(service_id, service_class, *args, &blk)
+        if service_class.include? Celluloid
+            @supervisor.supervise(service_id, service_class, *args, &blk)
+        else
+            service_class.new(*args, &blk)
+        end
+    end
+
+    def register_service(service_id, service, *params)
         # Make sure we've got an initialised service object here
-        service_object = service.kind_of?(Class) ? service.new : service
+        service_object = service.kind_of?(Class) ? new_service(service_id, service, *params) : service
         service_object.init
 
         # TODO revise the data type of service registration requests but they are good as arrays for now
-        service_registration_request = [ service_id, service, features ] 
+        service_registration_request = [ service_id, service, service_object.provided_features ] 
 
         @stage_monitor.synchronize do
             @current_stage << service_registration_request
@@ -71,6 +77,8 @@ class Core
 
     # Process the currently commited stages and initialise the services in the service queue
     def bootstrap
+        @framework = Celluloid::Actor[:framework]
+
         commit_stage
         process_service_queue
 
