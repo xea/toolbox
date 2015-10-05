@@ -36,8 +36,6 @@ class Core
 
         # Setting pure to true will keep core from registering a new framework by default
         unless pure
-            #@framework = new_service(:framework, Framework, self)
-
             # Stage 0: Framework level
             register_service :framework, Framework, self
             commit_stage
@@ -69,10 +67,11 @@ class Core
     def register_service(service_id, service, *service_args)
         # Make sure we've got an initialised service object here
         service_object = service.kind_of?(Class) ? new_service(service_id, service, *service_args) : service
+        # TODO service object initialisation error handling
         service_object.init
 
         # TODO revise the data type of service registration requests but they are good as arrays for now
-        service_registration_request = [ service_id, service, service_object.provided_features ] 
+        service_registration_request = [ service_id, service_object, service_object.provided_features ] 
 
         @stage_monitor.synchronize do
             @current_stage << service_registration_request
