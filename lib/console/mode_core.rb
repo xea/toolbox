@@ -17,11 +17,23 @@ class ModeCore < BaseMode
     end
 
     def list_features(out, framework)
-        out.puts @table.print([ "ID", "PROVIDED", "REQUIRED", "OPTIONAL" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, (descriptor.features - [:service]).join(","), descriptor.service.required_features.join(','), descriptor.service.optional_features.join(',') ] })
+        out.puts @table.print([ "ID", "PROVIDED", "REQUIRED", "OPTIONAL" ], framework.find_services.map { |descriptor| 
+            [ descriptor.service.service_id, 
+              (descriptor.features - [:service]).join(","), 
+              descriptor.service.required_features.join(','), 
+              descriptor.service.optional_features.join(',') 
+            ] 
+        })
     end
 
     def list_services(out, framework)
-        out.puts @table.print([ "ID", "STATE", "OID", "CLASS" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, descriptor.service.state, "0x%12x" % descriptor.service.object_id, descriptor.service.class.name ] } )
+        out.puts @table.print([ "ID", "STATE", "OID", "CLASS" ], framework.find_services.map { |descriptor| 
+            [ descriptor.service.service_id, 
+              descriptor.service.state, 
+              "0x%12x" % descriptor.service.object_id, 
+              descriptor.service.class.name 
+            ] 
+        })
     end
 
     def stop_service(out, framework, service_id)
