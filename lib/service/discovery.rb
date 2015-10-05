@@ -95,22 +95,30 @@ class DiscoveryService < Service
         if File.exist? @watch_dir and File.directory? @watch_dir
             removed_entries = @package_db[:installed].keys - Dir.entries(@watch_dir)
             puts "Removed packages: #{removed_entries}"
+            # TODO actually remove packages
         end
     end
 
     def scan_package(package_name)
         package_descriptor = "#{@watch_dir}/#{package_name}/package.yaml"
-        main_file = "#{@watch_dir}/#{package_name}/#{package_name}.rb"
 
         if File.exist? package_descriptor
             @logger.debug "Found package #{package_name}"
             descriptor = Psych.load_file package_descriptor
 
-            load main_file
-            load_package package_name, descriptor
+            if package_valid? descriptor
+                load_package package_name, descriptor
+            else
+                @logger.error "Not loading package #{package_name} because package is invalid"
+            end
         else 
             puts "not found"
         end
+    end
+
+    def package_valid?(descriptor)
+        # TODO package hash and digital signature checking
+        true
     end
 
     def load_package(internal_id, package_descriptor)
@@ -119,18 +127,28 @@ class DiscoveryService < Service
         candidates = @package_db[:installed].values.find_all { |entry| entry[:hash] == pkg_hash }
 
         if candidates.empty?
+            main_file = "#{@watch_dir}/#{internal_id}/#{internal_id}.rb"
+            load main_file
+
             entry = package_descriptor
+            entry[:hash] = pkg_hash
+
             @package_db[:installed][internal_id] = entry
 
-            (entry['services'] || []).each do |pkg_service_id, pkg_service|
+            (entry['services'] || {}).each do |pkg_service_id, pkg_service|
                 begin
+                    @logger.debug "Trying to register service #{pkg_service_id}"
                     service_class = Kernel.const_get(pkg_service['class'].to_sym)
                     service = service_class.new
                     @framework.register_service pkg_service, service
+                    @logger.info "Registered new package service #{pkg_service_id}"
                 rescue => e
                     @logger.error e.message
                 end
             end
+
+        else
+            @logger.debug "Package #{internal_id} is already installed. Skipping"
         end
     end
 end

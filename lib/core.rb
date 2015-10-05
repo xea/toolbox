@@ -66,7 +66,7 @@ class Core
         end
     end
 
-    def register_service(service_id, service, *service_args)
+    def register_service(service_id, service, *service_args, &success_callback)
         # Make sure we've got an initialised service object here
         service_object = service.kind_of?(Class) ? new_service(service_id, service, *service_args) : service
         # TODO service object initialisation error handling
@@ -78,6 +78,8 @@ class Core
         @stage_monitor.synchronize do
             @current_stage << service_registration_request
         end
+
+        success_callback.yield unless success_callback.nil?
 
         service_id
     end
