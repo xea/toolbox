@@ -29,7 +29,15 @@ class SimpleService
     end
 
     def feature_up(feature, service)
-        instance_variable_set("@#{feature.to_s}", service)
+        setter_type = service.nil? ? "down" : "up"
+
+        custom_setter = "feature_#{feature.to_s}_#{setter_type}".to_sym
+
+        if respond_to? custom_setter
+            send custom_setter, service
+        else
+            instance_variable_set("@#{feature.to_s}", service)
+        end
     end
 
     def self.metaclass; class << self; self; end; end
@@ -103,7 +111,6 @@ class ServiceProxy
             end
 
             proxy
-#            service
         end
     end
 end
