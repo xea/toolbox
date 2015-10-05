@@ -2,6 +2,7 @@ require_relative 'core/service'
 require_relative 'core/service_registration'
 require_relative 'core/service_registry'
 require_relative 'core/state'
+require_relative 'core/supervisor'
 require_relative 'service/framework'
 require_relative 'service/config'
 require_relative 'service/console'
@@ -31,6 +32,7 @@ class Core
         @service_monitor = Monitor.new
         @event_queue = Queue.new
         @service_registry = LocalServiceRegistry.new
+        @supervisor = SupervisorCompanion.new self
 
         # Setting pure to true will keep core from registering a new framework by default
         unless pure
@@ -49,6 +51,8 @@ class Core
             # Stage 3: Console host level
             register_service :console_host, ConsoleHostService, STDIN, STDOUT, STDERR
             commit_stage
+
+            @framework = @supervisor[:framework]
         end
     end
 
@@ -60,13 +64,14 @@ class Core
         end
     end
 
-    def register_service(service_id, service, *params)
+    def register_service(service_id, service, *service_args)
         # Make sure we've got an initialised service object here
-        service_object = service.kind_of?(Class) ? new_service(service_id, service, *params) : service
+        service_object = service.kind_of?(Class) ? new_service(service_id, service, *service_args) : service
+        # TODO service object initialisation error handling
         service_object.init
 
         # TODO revise the data type of service registration requests but they are good as arrays for now
-        service_registration_request = [ service_id, service, service_object.provided_features ] 
+        service_registration_request = [ service_id, service_object, service_object.provided_features ] 
 
         @stage_monitor.synchronize do
             @current_stage << service_registration_request
@@ -195,6 +200,8 @@ class Core
     def commit_stage
         @stage_monitor.synchronize do
             @service_stages << @current_stage unless @current_stage.empty?
+            @stage_counter ||= 0
+            @stage_counter += 1
             @current_stage = []
         end
     end
