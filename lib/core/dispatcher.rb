@@ -4,7 +4,7 @@ module Dispatcher
     def dispatch(request)
         service = request.service
         method = service.method(request.method)
-        method.call(*request.args)
+        method.call(*request.args, &request.block)
     end
 end
 

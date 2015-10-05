@@ -35,6 +35,10 @@ class Framework < Service
         @core.service_registry.find_all spec, &blk
     end
 
+    def begin_tx(&blk)
+        @core.begin_tx(&blk)
+    end
+
     def start_service(service_id)
         service_registration = @core.service_registry.find { |service| service.service_id == service_id.to_sym }
         @core.start_service service_registration unless service_registration.nil?

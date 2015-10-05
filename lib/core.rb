@@ -3,6 +3,7 @@ require_relative 'core/service_registration'
 require_relative 'core/service_registry'
 require_relative 'core/state'
 require_relative 'core/supervisor'
+require_relative 'core/tx'
 require_relative 'service/framework'
 require_relative 'service/config'
 require_relative 'service/console'
@@ -32,6 +33,7 @@ class Core
         @service_stages = []
         @stage_monitor = Monitor.new
         @service_monitor = Monitor.new
+        @tx_monitor = Monitor.new
         @event_queue = Queue.new
         @service_registry = LocalServiceRegistry.new
         @supervisor = SupervisorCompanion.new self
@@ -96,6 +98,18 @@ class Core
     def shutdown
         @event_queue << :shutdown
         @event_thread.join unless @event_thread.nil?
+    end
+
+    def begin_tx(&blk)
+        blk.yield(CoreTransaction.new self) unless blk.nil?
+    end
+
+    def commit_tx(requests)
+        @tx_monitor.synchronize do
+            requests.each do |request|
+                send request[:method], *request[:args], &request[:block]
+            end
+        end
     end
 
     def process_service_queue

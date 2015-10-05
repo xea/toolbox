@@ -107,16 +107,22 @@ class DiscoveryService < Service
 
             @package_db[:installed][internal_id] = entry
 
-            (entry['services'] || {}).each do |pkg_service_id, pkg_service|
-                begin
-                    @logger.debug "Trying to register service #{pkg_service_id}"
-                    service_class = Kernel.const_get(pkg_service['class'].to_sym)
-                    service = service_class.new
-                    @framework.register_service(pkg_service, service) 
-                    @logger.info "Registered new package service #{pkg_service_id}"
-                rescue => e
-                    @logger.error e.message
+            @framework.begin_tx do |tx|
+                (entry['services'] || {}).each do |pkg_service_id, pkg_service|
+                    begin
+                        @logger.debug "Trying to register service #{pkg_service_id}"
+                        service_class = Kernel.const_get(pkg_service['class'].to_sym)
+                        tx.register_service(pkg_service_id.to_sym, service_class) 
+                        @logger.info "Registered new package service #{pkg_service_id}"
+
+                    rescue => e
+                        @logger.error e.message
+                    end
                 end
+
+                tx.commit_stage if tx.dirty?
+                tx.process_service_queue
+                tx.commit
             end
         else
             @logger.debug "Package #{internal_id} is already installed. Skipping"

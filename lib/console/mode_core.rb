@@ -21,7 +21,7 @@ class ModeCore < BaseMode
     end
 
     def list_services(out, framework)
-        out.puts @table.print([ "ID", "STATE" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, descriptor.service.state ] } )
+        out.puts @table.print([ "ID", "STATE", "OID", "CLASS" ], framework.find_services.map { |descriptor| [ descriptor.service.service_id, descriptor.service.state, "0x%12x" % descriptor.service.object_id, descriptor.service.class.name ] } )
     end
 
     def stop_service(out, framework, service_id)
