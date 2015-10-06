@@ -30,7 +30,7 @@ class ModeCore < BaseMode
         out.puts @table.print([ "ID", "STATE", "OID", "CLASS" ], framework.find_services.map { |descriptor| 
             [ descriptor.service.service_id, 
               descriptor.service.state, 
-              "0x%12x" % descriptor.service.object_id, 
+              "0x%012x" % descriptor.service.object_id, 
               descriptor.service.class.name 
             ] 
         })

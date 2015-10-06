@@ -1,4 +1,5 @@
 id: Healthcheck
+version: 0.1
 services:
     healthchecker:
         class: HealthChecker
