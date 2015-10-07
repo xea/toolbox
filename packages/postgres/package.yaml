@@ -1,0 +1,5 @@
+id: PostgreSQL
+version: 0.1
+services:
+    psql:
+        class: PSQLService
