@@ -3,6 +3,8 @@ require_relative 'postgres_mode'
 
 class PSQLService < Service
 
+    DEFAULT_CONFIG = { hostname: 'localhost', port: 5432 }
+
     optional_features :console, :logger
 
     def feature_console_up(console)
