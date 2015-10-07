@@ -18,3 +18,4 @@ class PSQLService < Service
         @console = nil
     end
 end
+
