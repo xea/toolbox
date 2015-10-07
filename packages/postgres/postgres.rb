@@ -17,4 +17,24 @@ class PSQLService < Service
         @console.unregister_helper :pg
         @console = nil
     end
+
+    def connect_to(server)
+        PSQLConnection.new server, self
+    end
 end
+
+class PSQLConnection
+
+    def initialize(connection, service)
+        @connection = connection
+        @service = service
+    end
+
+    def execute(query)
+        puts "POP goes the weasel"
+    end
+
+    def disconnect
+    end
+end
+

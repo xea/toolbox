@@ -25,12 +25,16 @@ class DiscoveryService < Service
         interval = @config['sleep_interval'] || DEFAULT_SCAN_INTERVAL
 
         @scanner = every(interval) do
-            begin
-                scan_packages
-            rescue => e
-                p e.backtrace.join("\n")
-                @logger.error "Error caught during package discovery #{e.message}"
-            end
+            do_stuff
+        end
+    end
+
+    def do_stuff
+        begin
+            scan_packages
+        rescue => e
+            p e.backtrace.join("\n")
+            @logger.error "Error caught during package discovery #{e.message}"
         end
     end
 

@@ -15,7 +15,7 @@ class Interpreter
     def initialize(pure = false)
         @modes = ModeRegistry.new
         @tables = {}
-        @state = InterpreterState.new(@modes, @tables)
+        @state = InterpreterState.new(@modes, @tables, self)
         @helpers = { intp: @state, out: STDOUT }
 
         unless pure
@@ -161,13 +161,18 @@ class InterpreterState
 
     attr_reader :modes, :tables
 
-    def initialize(modes = {}, tables = {})
+    def initialize(modes = {}, tables = {}, interpreter = nil)
         @modes = modes
         @tables = tables
+        @interpreter = interpreter
     end
 
     def quit
         exit 0 
+    end
+
+    def context
+        @interpreter.build_context
     end
 end
 
