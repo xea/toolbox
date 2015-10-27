@@ -7,7 +7,7 @@ class DiscoveryService < Service
     DEFAULT_WATCH_DIR = "packages"
 
     # Check packages every 5 seconds by default
-    DEFAULT_SCAN_INTERVAL = 5  
+    DEFAULT_SCAN_INTERVAL = 5
 
     required_features :framework, :config
     optional_features :logger
@@ -25,19 +25,21 @@ class DiscoveryService < Service
         interval = @config['sleep_interval'] || DEFAULT_SCAN_INTERVAL
 
         @scanner = every(interval) do
-            begin
-                scan_packages
-            rescue => e
-                p e.backtrace.join("\n")
-                @logger.error "Error caught during package discovery #{e.message}"
-            end
+            do_scan
+        end
+    end
+
+    def do_scan
+        begin
+            scan_packages
+        rescue => e
+            p e.backtrace.join("\n")
+            @logger.error "Error caught during package discovery #{e.message}"
         end
     end
 
     def stop
         @scanner.cancel
-#        @watch_queue << :stop
-#        @watch_thread.join unless @watch_thread.nil?
     end
 
     def scan_packages

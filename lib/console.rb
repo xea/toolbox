@@ -105,6 +105,7 @@ class Console
             when :key_question_mark 
                 if @buffer.idx == 0
                     help = generate_help
+                    @term.clear_statusbar current_position
                     @term.statusbar help, current_position
                 else
                     @term.print @buffer.type c

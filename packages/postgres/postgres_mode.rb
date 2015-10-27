@@ -6,8 +6,7 @@ class PostgresMode < BaseMode
     register_command(:exit_mode, 'exit', 'Exit current mode') { |intp| intp.modes.exit_mode }
     register_command(:execute_query, 'execute *query') 
 
-    def execute_query(out, query)
-        out.print "query is "
-        out.puts query
+    def execute_query(out, pg, query)
+        puts "executing stuff"
     end
 end
