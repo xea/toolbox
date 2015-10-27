@@ -9,6 +9,9 @@ class DiscoveryService < Service
     # Check packages every 5 seconds by default
     DEFAULT_SCAN_INTERVAL = 5
 
+    CONFIG_WATCH_DIR = "watch_dir"
+    CONFIG_SCAN_INTERVAL = "scan_interval"
+
     required_features :framework, :config
     optional_features :logger
     provided_features :discovery
@@ -18,11 +21,11 @@ class DiscoveryService < Service
     end
 
     def start
-        watch_dir = @config['watch_dir'] || DEFAULT_WATCH_DIR
+        watch_dir = @config[CONFIG_WATCH_DIR] || DEFAULT_WATCH_DIR
         @watch_dir = watch_dir
         @watch_queue = Queue.new
 
-        interval = @config['sleep_interval'] || DEFAULT_SCAN_INTERVAL
+        interval = @config[CONFIG_SCAN_INTERVAL] || DEFAULT_SCAN_INTERVAL
 
         @scanner = every(interval) do
             do_scan

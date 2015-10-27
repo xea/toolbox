@@ -39,14 +39,14 @@ class ConfigService < Service
 
     def get(spawn_id, key)
         @config_monitor.synchronize do
-            spawn_cfg = @cached_data[spawn_id] || @default_config
-            spawn_cfg[key] || @cached_data[:global][key]
+            spawn_cfg = @cached_data[spawn_id] || @cached_data[:global]
+            spawn_cfg[key]
         end
     end
 
     def set(spawn_id, key, value)
         @config_monitor.synchronize do
-            spawn_cfg = @cached_data[spawn_id] || @default_config
+            spawn_cfg = @cached_data[spawn_id] || {}
             spawn_cfg[key] = value
             @cached_data[spawn_id] = spawn_cfg
 
@@ -122,7 +122,7 @@ class ConfigMode < BaseMode
 
     register_command(:exit_mode, "exit", "Exit current mode") { |intp| intp.modes.exit_mode }
     register_command(:get_config, "get :key", "Get configuration setting") { |config, key, out| out.puts "#{key} = #{config[key]}" }
-    register_command(:set_config, "set :key :value", "Set configuration setting") { |config, key, value| binding.pry; config[key] = value }
+    register_command(:set_config, "set :key :value", "Set configuration setting") { |config, key, value| config[key] = value }
     register_command(:dump_config, "dump", "Dump configuration to screen") do |config|
         puts config.dump
     end
