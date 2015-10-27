@@ -1,5 +1,5 @@
 ---
 :global: {}
 :discovery:
-  watch_dir: package
+  watch_dir: packages
   scan_interval: 5

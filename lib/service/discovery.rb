@@ -52,7 +52,7 @@ class DiscoveryService < Service
     end
 
     def scan_new_packages
-        @logger.debug "Scanning new packages"
+        @logger.debug "Scanning new packages in directory #{@watch_dir}"
 
         if File.exist? @watch_dir and File.directory? @watch_dir
             (Dir.entries(@watch_dir) - [ ".", ".." ]).each do |entry|
@@ -75,6 +75,7 @@ class DiscoveryService < Service
 
     def scan_package(package_name)
         # ignore locked packages
+        @logger.debug "Scanning #{package_name}"
         return if File.exist? "#{@watch_dir}/#{package_name}/.lock"
 
         package_descriptor = "#{@watch_dir}/#{package_name}/package.yaml"
