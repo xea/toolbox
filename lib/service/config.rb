@@ -123,6 +123,7 @@ class ConfigMode < BaseMode
     register_command(:exit_mode, "exit", "Exit current mode") { |intp| intp.modes.exit_mode }
     register_command(:get_config, "get :key", "Get configuration setting") { |config, key, out| out.puts "#{key} = #{config[key]}" }
     register_command(:set_config, "set :key :value", "Set configuration setting") { |config, key, value| config[key] = value }
+    register_command(:set_config_int, "seti :key :value", "Set integer configuration setting") { |config, key, value| config[key] = value.to_i }
     register_command(:dump_config, "dump", "Dump configuration to screen") do |config|
         puts config.dump
     end
