@@ -1,0 +1,5 @@
+---
+:global: {}
+:discovery:
+  watch_dir: package
+  scan_interval: '5'
