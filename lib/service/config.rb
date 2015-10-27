@@ -124,8 +124,14 @@ class ConfigMode < BaseMode
     register_command(:get_config, "get :key", "Get configuration setting") { |config, key, out| out.puts "#{key} = #{config[key]}" }
     register_command(:set_config, "set :key :value", "Set configuration setting") { |config, key, value| config[key] = value }
     register_command(:set_config_int, "seti :key :value", "Set integer configuration setting") { |config, key, value| config[key] = value.to_i }
-    register_command(:dump_config, "dump", "Dump configuration to screen") do |config|
-        puts config.dump
+    register_command(:dump_config, "dump", "Dump configuration to screen") do |config, out|
+        cfg = config.dump
+        cfg.keys.each do |key|
+            out.puts key.to_s.upcase
+            cfg[key].each do |ikey, ival|
+                out.puts "  #{ikey} = #{ival}"
+            end
+        end
     end
 
 end
