@@ -12,6 +12,7 @@ class ConfigService < Service
         super
         @source = filename
         @config_monitor = Monitor.new
+        @default_config = { global: {} }
     end
 
     def stop
@@ -27,25 +28,25 @@ class ConfigService < Service
     def reload
         if File.exist? @source
             @config_monitor.synchronize do
-                @cached_data = Psych.load_file @source || {}
+                @cached_data = Psych.load_file @source || @default_config
             end
         else
             @config_monitor.synchronize do
-                @cached_data = {}
+                @cached_data = @default_config
             end
         end
     end
 
     def get(spawn_id, key)
         @config_monitor.synchronize do
-            spawn_cfg = @cached_data[spawn_id] || {}
-            spawn_cfg[key]
+            spawn_cfg = @cached_data[spawn_id] || @default_config
+            spawn_cfg[key] || @cached_data[:global][key]
         end
     end
 
     def set(spawn_id, key, value)
         @config_monitor.synchronize do
-            spawn_cfg = @cached_data[spawn_id] || {}
+            spawn_cfg = @cached_data[spawn_id] || @default_config
             spawn_cfg[key] = value
             @cached_data[spawn_id] = spawn_cfg
 
@@ -55,6 +56,10 @@ class ConfigService < Service
                 end
             end
         end
+    end
+
+    def global_config
+        @cached_data
     end
 
     def dump
@@ -72,7 +77,7 @@ class ConfigService < Service
                 @console = nil
             else
                 @console = service
-                @console.register_helper :config, self
+                @console.register_helper :config, ConfigProxy.new(nil, Actor.current)
                 @console.register_mode ConfigMode
             end
         end
@@ -87,16 +92,26 @@ class ConfigProxy < SimpleService
         @service = service
     end
 
-    def values
-        self
+    def dump
+        @service.global_config
     end
 
     def [](key)
-        @service.get(@spawn_id, key)
+        if @spawn_id.nil?
+            lookup_key, spawn_id = key.split('/').reverse
+            @service.get(spawn_id.to_sym, lookup_key)
+        else
+            @service.get(@spawn_id, key)
+        end
     end
 
     def []=(key, value)
-        @service.set(@spawn_id, key, value)
+        if @spawn_id.nil?
+            lookup_key, spawn_id = key.split('/').reverse
+            @service.set(spawn_id.to_sym, lookup_key, value)
+        else
+            @service.set(@spawn_id, key, value)
+        end
     end
 end
 
@@ -106,6 +121,8 @@ class ConfigMode < BaseMode
     access_from :debug, "config", "Enter configuration mode"
 
     register_command(:exit_mode, "exit", "Exit current mode") { |intp| intp.modes.exit_mode }
+    register_command(:get_config, "get :key", "Get configuration setting") { |config, key, out| out.puts "#{key} = #{config[key]}" }
+    register_command(:set_config, "set :key :value", "Set configuration setting") { |config, key, value| binding.pry; config[key] = value }
     register_command(:dump_config, "dump", "Dump configuration to screen") do |config|
         puts config.dump
     end

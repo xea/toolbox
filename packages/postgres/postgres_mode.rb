@@ -7,6 +7,7 @@ class PostgresMode < BaseMode
     register_command(:execute_query, 'execute *query') 
 
     def execute_query(out, pg, query)
-        puts "executing stuff"
+        result = pg.execute_query query
+        p result
     end
 end

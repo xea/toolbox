@@ -18,5 +18,9 @@ class PSQLService < Service
         @console.unregister_helper :pg
         @console = nil
     end
+
+    def execute_query(query)
+        [ :lofasz ]
+    end
 end
 
