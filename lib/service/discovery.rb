@@ -27,6 +27,10 @@ class DiscoveryService < Service
 
         interval = @config[CONFIG_SCAN_INTERVAL] || DEFAULT_SCAN_INTERVAL
 
+        after(0.1) do
+            do_scan
+        end
+
         @scanner = every(interval) do
             do_scan
         end
