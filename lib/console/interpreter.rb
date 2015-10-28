@@ -103,7 +103,7 @@ class Interpreter
     end
 
     def lookup_args(user_args)
-        Hash[*(user_args.map { |k, v| [ k.gsub(/^[:$#](.*)[+!]?/, "\\1").to_sym, lookup_arg(k, v) ] }.flatten)]
+        Hash[*(user_args.map { |k, v| [ k.gsub(/^[:$#*](.*)[+!]?/, "\\1").to_sym, lookup_arg(k, v) ] }.flatten)]
     end
 
     def lookup_arg(key, arg)

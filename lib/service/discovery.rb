@@ -7,7 +7,10 @@ class DiscoveryService < Service
     DEFAULT_WATCH_DIR = "packages"
 
     # Check packages every 5 seconds by default
-    DEFAULT_SCAN_INTERVAL = 5  
+    DEFAULT_SCAN_INTERVAL = 5
+
+    CONFIG_WATCH_DIR = "watch_dir"
+    CONFIG_SCAN_INTERVAL = "scan_interval"
 
     required_features :framework, :config
     optional_features :logger
@@ -18,18 +21,22 @@ class DiscoveryService < Service
     end
 
     def start
-        watch_dir = @config['watch_dir'] || DEFAULT_WATCH_DIR
+        watch_dir = @config[CONFIG_WATCH_DIR] || DEFAULT_WATCH_DIR
         @watch_dir = watch_dir
         @watch_queue = Queue.new
 
-        interval = @config['sleep_interval'] || DEFAULT_SCAN_INTERVAL
+        interval = @config[CONFIG_SCAN_INTERVAL] || DEFAULT_SCAN_INTERVAL
+
+        after(0.1) do
+            do_scan
+        end
 
         @scanner = every(interval) do
-            do_stuff
+            do_scan
         end
     end
 
-    def do_stuff
+    def do_scan
         begin
             scan_packages
         rescue => e
@@ -40,8 +47,6 @@ class DiscoveryService < Service
 
     def stop
         @scanner.cancel
-#        @watch_queue << :stop
-#        @watch_thread.join unless @watch_thread.nil?
     end
 
     def scan_packages
@@ -51,7 +56,7 @@ class DiscoveryService < Service
     end
 
     def scan_new_packages
-        @logger.debug "Scanning new packages"
+        @logger.debug "Scanning new packages in directory #{@watch_dir}"
 
         if File.exist? @watch_dir and File.directory? @watch_dir
             (Dir.entries(@watch_dir) - [ ".", ".." ]).each do |entry|
@@ -74,6 +79,7 @@ class DiscoveryService < Service
 
     def scan_package(package_name)
         # ignore locked packages
+        @logger.debug "Scanning #{package_name}"
         return if File.exist? "#{@watch_dir}/#{package_name}/.lock"
 
         package_descriptor = "#{@watch_dir}/#{package_name}/package.yaml"
@@ -87,7 +93,7 @@ class DiscoveryService < Service
             else
                 @logger.error "Not loading package #{package_name} because package is invalid"
             end
-        else 
+        else
             puts "not found"
         end
     end
@@ -116,7 +122,7 @@ class DiscoveryService < Service
                     begin
                         @logger.debug "Trying to register service #{pkg_service_id}"
                         service_class = Kernel.const_get(pkg_service['class'].to_sym)
-                        tx.register_service(pkg_service_id.to_sym, service_class) 
+                        tx.register_service(pkg_service_id.to_sym, service_class)
                         @logger.info "Registered new package service #{pkg_service_id}"
 
                     rescue => e

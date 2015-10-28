@@ -3,6 +3,7 @@
 *.history
 *.swp
 *.swo
+*.swn
 *.tmp
 *.gem
 *.rbc
