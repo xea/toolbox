@@ -26,7 +26,7 @@ class Core
     include RunState
     include Dispatcher
 
-    # Initialise a core with the most essential services (framework and console host). 
+    # Initialise a core with the most essential services (framework and console host).
     def initialize(system_name, pure = false)
         @system_name = system_name
         @current_stage = []
@@ -60,14 +60,6 @@ class Core
         end
     end
 
-    def new_service(service_id, service_class, *args, &blk)
-        if service_class.include? Celluloid
-            @supervisor.supervise(service_id, service_class, *args, &blk)
-        else
-            service_class.new(*args, &blk)
-        end
-    end
-
     def register_service(service_id, service, *service_args, &success_callback)
         # Make sure we've got an initialised service object here
         service_object = service.kind_of?(Class) ? new_service(service_id, service, *service_args) : service
@@ -75,7 +67,7 @@ class Core
         service_object.init
 
         # TODO revise the data type of service registration requests but they are good as arrays for now
-        service_registration_request = [ service_id, service_object, service_object.provided_features ] 
+        service_registration_request = [ service_id, service_object, service_object.provided_features ]
 
         @stage_monitor.synchronize do
             @current_stage << service_registration_request
@@ -94,7 +86,7 @@ class Core
         try_console
     end
 
-    # Initiate core shutdown. 
+    # Initiate core shutdown.
     def shutdown
         @event_queue << :shutdown
         @event_thread.join unless @event_thread.nil?
@@ -131,7 +123,7 @@ class Core
             end
         end
 
-        @stage_monitor.synchronize do 
+        @stage_monitor.synchronize do
             process_stages @service_stages
         end
     end
@@ -173,7 +165,7 @@ class Core
 
                 # Post-activate optional dependencies
                 @service_registry.find_all { |srv| srv.state == RunState::ACTIVE and srv.optional_features.find_all { |feature| service.provided_features.member? feature}.length > 0 }.each do |opt_dependency|
-                    opt_dependency.service.optional_features.find_all { |feature| service.provided_features.member? feature }.each do |feature| 
+                    opt_dependency.service.optional_features.find_all { |feature| service.provided_features.member? feature }.each do |feature|
                         puts "optional injection: #{feature} to #{opt_dependency.service.service_id}"
                         proxy = ServiceProxy.consume service.spawn_new(opt_dependency.service.service_id), self
                         opt_dependency.service.feature_up feature, proxy
@@ -211,7 +203,7 @@ class Core
         end
     end
 
-    # Close and commit the current service stage and open a new, empty stage. Services registered up to this 
+    # Close and commit the current service stage and open a new, empty stage. Services registered up to this
     # point will be processed as one batch.
     def commit_stage
         @stage_monitor.synchronize do
@@ -237,14 +229,37 @@ class Core
             end
         end
     end
-	
+
+protected
+
+    def run_console(console)
+        console.welcome
+
+        while console.running? do
+            console.show_prompt
+            raw_input = console.read_input
+            host_event = console.process_input raw_input
+            if host_event.kind_of? Symbol
+                @event_queue << host_event unless host_event.nil? if host_event.kind_of? Symbol
+            end
+        end
+    end
+
+    def new_service(service_id, service_class, *args, &blk)
+        if service_class.include? Celluloid
+            @supervisor.supervise(service_id, service_class, *args, &blk)
+        else
+            service_class.new(*args, &blk)
+        end
+    end
+
     # TODO deal with concurrent/subsequent invocations
     def try_console
         # if console service is available
 
         console = @framework.service :console
         main_thread = Thread.current
-        
+
         if console.nil?
             # No console service present, looping on main thread
             event_loop(main_thread)
@@ -263,19 +278,4 @@ class Core
         end
     end
 
-protected
-
-    def run_console(console)
-        console.welcome
-
-        while console.running? do
-            console.show_prompt
-            raw_input = console.read_input
-            host_event = console.process_input raw_input
-            if host_event.kind_of? Symbol
-                @event_queue << host_event unless host_event.nil? if host_event.kind_of? Symbol
-            end
-        end
-    end
 end
-
