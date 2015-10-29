@@ -19,8 +19,19 @@ class PSQLService < Service
         @console = nil
     end
 
-    def execute_query(query)
-        [ :lofasz ]
+    def connect_to(conninfo)
+        begin
+            connection = PG.connect(conninfo)
+            PGConnection.new connection
+        rescue PG::Error => error
+            # TODO error handling
+        end
     end
 end
 
+class PGConnection
+
+    def initialize(connection)
+        @connection = connection
+    end
+end
