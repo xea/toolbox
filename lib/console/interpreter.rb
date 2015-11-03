@@ -29,7 +29,7 @@ class Interpreter
 
         MethodSource::MethodExtensions.set_interpreter_instance self
     end
-    
+
     # Removes unnecessary white spaces (and possibly other unwanted characters)
     # from the given input string.
     #
@@ -57,7 +57,7 @@ class Interpreter
     def register_helper(id, helper)
         @helpers[id] = helper
     end
-    
+
     def register_mode(mode, type)
         if !mode.nil? and mode.ancestors.member? BaseMode
             mode_instance = mode.new
@@ -77,8 +77,8 @@ class Interpreter
         end
     end
 
-    # Attempts to find an request handler for the current input. It might return nil when there's no 
-    # corresponding handler to the input or it might return a command object containing the vital 
+    # Attempts to find an request handler for the current input. It might return nil when there's no
+    # corresponding handler to the input or it might return a command object containing the vital
     # information to react
     def find_command(input)
         available_accessors = @modes.current_accessors.find_all { |accessor| accessor.signature.matches? input }
@@ -155,6 +155,12 @@ class Interpreter
             end
         end unless method.nil?
     end
+
+    def generate_help
+        local_commands = (modes.current_mode.available_commands + modes.current_accessors).map { |cmd| [ cmd.signature.to_readable, cmd.description ] }
+        global_commands = modes.global_mode.available_commands.map { |cmd| [ cmd.signature.to_readable, cmd.description ] }
+        [ local_commands, global_commands ]
+    end
 end
 
 class InterpreterState
@@ -168,11 +174,15 @@ class InterpreterState
     end
 
     def quit
-        exit 0 
+        exit 0
     end
 
     def context
         @interpreter.build_context
+    end
+
+    def generate_help
+        @interpreter.generate_help
     end
 end
 

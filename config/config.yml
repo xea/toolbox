@@ -3,3 +3,5 @@
 :discovery:
   watch_dir: packages
   scan_interval: 5
+:console:
+  mode: dumb

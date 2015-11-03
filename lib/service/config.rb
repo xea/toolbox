@@ -6,7 +6,7 @@ require 'yaml'
 class ConfigService < Service
 
     optional_features :logger, :console
-    provided_features :config 
+    provided_features :config
 
     def initialize(filename = nil)
         super
@@ -86,6 +86,8 @@ end
 
 class ConfigProxy < SimpleService
 
+    attr_reader :spawn_id
+
     def initialize(spawn_id, service)
         super
         @spawn_id = spawn_id
@@ -99,18 +101,18 @@ class ConfigProxy < SimpleService
     def [](key)
         if @spawn_id.nil?
             lookup_key, spawn_id = key.split('/').reverse
-            @service.get(spawn_id.to_sym, lookup_key)
+            @service.get(spawn_id.to_sym, lookup_key.to_s)
         else
-            @service.get(@spawn_id, key)
+            @service.get(@spawn_id, key.to_s)
         end
     end
 
     def []=(key, value)
         if @spawn_id.nil?
             lookup_key, spawn_id = key.split('/').reverse
-            @service.set(spawn_id.to_sym, lookup_key, value)
+            @service.set(spawn_id.to_sym, lookup_key.to_s, value)
         else
-            @service.set(@spawn_id, key, value)
+            @service.set(@spawn_id, key.to_s, value)
         end
     end
 end
