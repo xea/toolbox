@@ -1,0 +1,7 @@
+id: Query Repository
+version: 0.1
+dependencies:
+    - postgres
+services:
+    query_repository:
+        class: QueryRepositoryService

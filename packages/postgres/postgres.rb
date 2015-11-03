@@ -7,6 +7,7 @@ class PSQLService < Service
     DEFAULT_CONFIG = { hostname: 'localhost', port: 5432 }
 
     optional_features :console, :logger
+    provided_features :postgres
 
     def feature_console_up(console)
         @console = console

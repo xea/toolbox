@@ -1,7 +1,7 @@
-require_relative 'lib/core'
-require_relative "lib/service/console"
-require_relative 'lib/service/logger'
-require_relative 'lib/service/discovery'
+require_relative '../lib/core'
+require_relative '../lib/service/console'
+require_relative '../lib/service/logger'
+require_relative '../lib/service/discovery'
 
 core = Core.new :toolbox
 core.register_service :console, ConsoleService

@@ -12,7 +12,10 @@ class PostgresMode < BaseMode
         p result
     end
 
-    def connect_to(out, server, db, username, password)
-        out.puts "Connecting to server at #{server} to #{db}"
+    def connect_to(pg, out, server, db, username, password)
+        p pg
+#        @conn = pg.connect_to({ host: server, dbname: db, user: username, password: password })
+#        out.puts "Connecting to server at #{server} to #{db}"
+        out.puts "Connected to: #{@conn}"
     end
 end
