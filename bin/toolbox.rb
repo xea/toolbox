@@ -3,6 +3,7 @@ require_relative '../lib/service/console'
 require_relative '../lib/service/logger'
 require_relative '../lib/service/discovery'
 
+# Base toolbox setup with a core and some of the most essential services.
 core = Core.new :toolbox
 core.register_service :console, ConsoleService
 core.commit_stage

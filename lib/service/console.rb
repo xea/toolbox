@@ -29,13 +29,19 @@ end
 class ConsoleService < SimpleService
 
     required_features :framework, :console_host
+    optional_features :config
     provided_features :console
 
     def start
         sleep 0.1 # <- wtf hack to allow asynchronous calls, Celluloid srsly?
         @running = true
         @console_host.out.puts 'Console service started'
-        @console = Console.new
+
+        if !@config.nil? and @config[:mode] == "dumb"
+            @console = DumbConsole.new
+        else
+            @console = Console.new
+        end
         @console.interpreter.register_helper :framework, @framework
     end
 

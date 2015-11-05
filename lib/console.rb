@@ -9,7 +9,7 @@ require_relative "console/autocomplete"
 require_relative "console/mode_core"
 
 # Enables user-interaction with the framework via keyboard inputs
-class Console 
+class Console
 
     attr_reader :interpreter
 
@@ -17,7 +17,7 @@ class Console
         @term = Terminal.new
         @buffer = LineBuffer.new
         @history = History.new ".toolbox.history"
-        @interpreter = Interpreter.new 
+        @interpreter = Interpreter.new
         @autocomplete = Autocomplete.new @interpreter
         @running = false
 
@@ -42,8 +42,8 @@ class Console
         @term.puts
         @term.puts "Known bugs and other #{'TODO'.green} items:"
     end
-    
-    # Returns the current cursor offset. This might seem 
+
+    # Returns the current cursor offset. This might seem
     def current_position
         gen_prompt.no_colors.length + @buffer.idx
     end
@@ -102,7 +102,7 @@ class Console
                 @history.rewind
                 @last_tab = false
                 return s
-            when :key_question_mark 
+            when :key_question_mark
                 if @buffer.idx == 0
                     help = generate_help
                     @term.clear_statusbar current_position
@@ -154,11 +154,9 @@ class Console
             commands.map { |msg| fmt % msg }
         end
 
+        local_commands, global_commands = @interpreter.generate_help
         local_header = [ " Local commands" ]
-        local_commands = (@interpreter.modes.current_mode.available_commands + @interpreter.modes.current_accessors).map { |cmd| [ cmd.signature.to_readable, cmd.description ] }
-
         global_header = [ " Global commands" ]
-        global_commands = @interpreter.modes.global_mode.available_commands.map { |cmd| [ cmd.signature.to_readable, cmd.description ] }
 
         max_sig_length = (local_commands + global_commands).collect { |m| m[0].length }.max || 0
         max_sig_length = 7 if max_sig_length < 7
@@ -193,5 +191,57 @@ class Console
     def process_input(input)
         @history.append input
         @interpreter.process input
+    end
+end
+
+class DumbConsole
+
+    attr_reader :interpreter
+
+    def initialize
+        @term = Terminal.new
+        @interpreter = Interpreter.new
+        @autocomplete = Autocomplete.new @interpreter
+        @history = History.new ".toolbox.history"
+        @running = false
+
+        @interpreter.register_helper :history, @history
+    end
+
+    # Initialises the terminal and launches the CLI console
+    def start
+        @running = true
+    end
+
+    def stop
+        @running = false
+    end
+
+    # Prints a nice, warm welcoming banner introducing ourselves to the user.
+    def welcome
+		@term.puts "Welcome to " +  "TOOLBOX".bold.green + " #{'3.0'.blue} (dummy mode)"
+        @term.puts
+    end
+
+    def main_loop
+        while @running do
+            prompt
+            raw_input = read_input
+            process_input raw_input
+        end
+    end
+
+    def read_input
+        gets
+    end
+
+    def process_input(input)
+        @history.append input
+        @interpreter.process input
+    end
+
+    def prompt
+        mode_str = "#{@interpreter.modes.current_mode.mode_id.to_s}"
+        "rsgi/#{mode_str}> "
     end
 end

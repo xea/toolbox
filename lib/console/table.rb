@@ -32,9 +32,9 @@ class PrinTable
         end
     end
 
-    def print_simple_table(headers, data)
+    def print_simple_table(headers, data, &aggregator)
 
-        print_fmt_table(headers, data, { v: " ", sh: false, pl: 0, pr: 0 })
+        print_fmt_table(headers, data, { v: " ", sh: false, pl: 0, pr: 0 }, aggregator)
     end
 
     def print_raw_table(headers, data)
@@ -48,7 +48,7 @@ class PrinTable
         result
     end
 
-    def print_fmt_table(headers, data, fmt = {})
+    def print_fmt_table(headers, data, fmt = {}, aggregator = nil)
         # pl - padding left, pr - padding right, sh: separate headers
         default_fmt = { node: "+", h: "-", v: "|", pl: 1, pr: 1, sh: true }
         fmt = default_fmt.merge fmt
@@ -79,7 +79,10 @@ class PrinTable
                 result << print_fmt_separator(field_lengths, fmt) if fmt[:sh]
             end
 
-            result += data.map { |row| print_fmt_row(row, field_lengths.map { |x| x * -1 }, fmt) }
+            result += data.map { |row| 
+                aggregator.yield row unless aggregator.nil?
+                print_fmt_row(row, field_lengths.map { |x| x * -1 }, fmt) 
+            }
         else
             []
         end

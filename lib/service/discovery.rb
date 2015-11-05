@@ -93,7 +93,7 @@ class DiscoveryService < Service
             else
                 @logger.error "Not loading package #{package_name} because package is invalid"
             end
-        else 
+        else
             puts "not found"
         end
     end
@@ -122,7 +122,7 @@ class DiscoveryService < Service
                     begin
                         @logger.debug "Trying to register service #{pkg_service_id}"
                         service_class = Kernel.const_get(pkg_service['class'].to_sym)
-                        tx.register_service(pkg_service_id.to_sym, service_class) 
+                        tx.register_service(pkg_service_id.to_sym, service_class)
                         @logger.info "Registered new package service #{pkg_service_id}"
 
                     rescue => e
