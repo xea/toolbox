@@ -1,17 +1,20 @@
 class QueryRepositoryService < Service
 
-    required_features :postgres, :config
+    required_features :config
     optional_features :console
     provided_features :query_repository
 
     def init
-        @repository = {}
+        @repository = {
+            id_select: "select 1;"
+        }
     end
 
     def destroy
         @repository = {}
     end
 
-    def execute(query_id)
+    def lookup(key)
+        @repository[key.to_sym]
     end
 end
