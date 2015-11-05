@@ -57,17 +57,20 @@ class Signature
             end
         else
             [ pattern ]
-        end 
+        end
     end
 
     def matches?(input, ctx = nil)
-        input =~ to_regexp(@pattern, ctx)
+        re = to_regexp(@pattern, ctx)
+        input =~ re
     end
 
     def to_regexp(match_pattern, context = nil)
-        pattern = match_pattern.gsub(/[$:#][\S]+/, "([\\S]+)")
-        pattern = pattern.gsub(/[*][\S]+/, "(.*)")
-        Regexp.new "^#{pattern}[+!]?$"
+    #    pattern = match_pattern.gsub(/ [$:#][\S]+([?])/, "([\\s]+[\\S]+)?")
+        p1 = match_pattern.gsub(/[\s]*[$:#][\w]+[?]/, "[\\s]?([\\S]+)?")
+        p2 = p1.gsub(/[$:#][\w]+/, "([\\S]+)")
+        p3 = p2.gsub(/[*][\S]+/, "(.*)")
+        Regexp.new "^#{p3}[+!]?$"
     end
 
     def matches_partial?(input, ctx = nil)
@@ -88,7 +91,7 @@ class Signature
             # the cursor is standing right behind a word: completing the previous word
 
             # force qu<tab>
-            # input_part_id = 1 
+            # input_part_id = 1
 
             unless strict_head_check pattern_parts, input_parts, ctx
 
@@ -152,5 +155,3 @@ class Signature
         end
     end
 end
-
-
