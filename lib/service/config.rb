@@ -40,7 +40,7 @@ class ConfigService < Service
     def get(spawn_id, key)
         @config_monitor.synchronize do
             spawn_cfg = @cached_data[spawn_id] || @cached_data[:global]
-            spawn_cfg[key]
+            spawn_cfg[key] || spawn_cfg[key.to_sym]
         end
     end
 
