@@ -169,19 +169,11 @@ class Core
                         else
                             registration.service.set_state_installed("Couldn't satisfy required dependencies: #{missing_dependencies(registration.service)}")
                         end
-                    }
-                end
 
-                registrations.each do |registration|
-                    start_service registration
-                end
-=begin
-                registrations = current_stage.map do |service_registration_request|
-                    @service_registry.register_service(*(service_registration_request.drop(1))) { |registration|
-                        if has_required_dependencies? registration.service
-                            registration.service.set_state_resolved
-                        else
-                            registration.service.set_state_installed("Couldn't satisfy required dependencies: #{missing_dependencies(registration.service)}")
+                        dependants(registration.service)[:required].each do |dependant|
+                            if has_required_dependencies? dependant.service and dependant.service.state? RunState::INSTALLED
+                                dependant.service.set_state_resolved
+                            end
                         end
                     }
                 end
@@ -189,7 +181,8 @@ class Core
                 registrations.each do |registration|
                     start_service registration
                 end
-=end
+
+                # Process the remaining stages
                 process_stages stages
             end
         end
@@ -219,6 +212,9 @@ class Core
             required: service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.required_features.member? feature } }.reduce(:+),
             optional: service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.optional_features.member? feature } }.reduce(:+)
         }
+    end
+
+    def update_status(service)
     end
 
     def start_service(service_registration)
