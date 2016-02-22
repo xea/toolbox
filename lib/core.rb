@@ -67,7 +67,7 @@ class Core
         service_object.init
 
         # TODO revise the data type of service registration requests but they are good as arrays for now
-        service_registration_request = [ service_id, service_object, service_object.provided_features ]
+        service_registration_request = [ :+, service_id, service_object, service_object.provided_features ]
 
         @stage_monitor.synchronize do
             @current_stage << service_registration_request
@@ -76,6 +76,22 @@ class Core
         success_callback.yield unless success_callback.nil?
 
         service_id
+    end
+
+    def unregister_service(service_id)
+        service_registration = @service_registry.find_by_id service_id
+
+        service_unregistration_request = [ :-, service_id ]
+
+        unless service_registration.nil?
+            @stage_monitor.synchronize do
+                @current_stage << service_unregistration_request
+#                stop_service(service_registration)
+#                @service_registry.unregister_service(service_id)
+#                service_registration.service.set_state_uninstalled
+            end
+        end
+
     end
 
     # Process the currently commited stages and initialise the services in the service queue
@@ -105,20 +121,75 @@ class Core
     end
 
     def process_service_queue
+        def merge_operations(requests)
+            operations = {}
+
+            requests.each do |request|
+                operations[request[1]] = request
+            end
+
+            operations
+        end
+
         def process_stages(stages)
             current_stage = stages.shift
 
             unless current_stage.nil?
-                registrations = current_stage.map do |service_registration_request|
-                    @service_registry.register_service(*service_registration_request) { |registration|
-                        registration.service.set_state_resolved if has_required_dependencies? registration.service
+                add_requests = merge_operations(current_stage).values.find_all { |op| op[0] == :+ }
+                remove_requests = merge_operations(current_stage).values.find_all { |op| op[0] == :- }
+
+                remove_requests.each do |remove_request|
+                    current_service = @service_registry.find_by_id(remove_request[1])
+
+                    unless current_service.nil?
+                        stop_service(current_service)
+                    end
+                end
+
+                remove_requests.each do |remove_request|
+                    current_service = @service_registry.find_by_id(remove_request[1])
+
+                    dependants(current_service.service)[:required].each do |dependant|
+                        if dependant.service.state? RunState::ACTIVE
+                            puts "This really shouldn't be happening"
+                        elsif dependant.service.state? RunState::RESOLVED
+                            dependant.service.set_state_installed
+                        end
+                    end
+
+                    @service_registry.unregister_service(remove_request[1])
+                    current_service.service.set_state_uninstalled
+
+                end
+
+                registrations = add_requests.map do |add_request|
+                    @service_registry.register_service(*(add_request.drop(1))) { |registration|
+                        if has_required_dependencies? registration.service
+                            registration.service.set_state_resolved
+                        else
+                            registration.service.set_state_installed("Couldn't satisfy required dependencies: #{missing_dependencies(registration.service)}")
+                        end
                     }
                 end
 
                 registrations.each do |registration|
                     start_service registration
                 end
+=begin
+                registrations = current_stage.map do |service_registration_request|
+                    @service_registry.register_service(*(service_registration_request.drop(1))) { |registration|
+                        if has_required_dependencies? registration.service
+                            registration.service.set_state_resolved
+                        else
+                            registration.service.set_state_installed("Couldn't satisfy required dependencies: #{missing_dependencies(registration.service)}")
+                        end
+                    }
+                end
 
+                registrations.each do |registration|
+                    start_service registration
+                end
+=end
                 process_stages stages
             end
         end
@@ -134,6 +205,20 @@ class Core
 
     def has_required_dependencies?(service)
         !(service.required_features.map { |feature| service_registry.find feature }.member? nil)
+    end
+
+    def missing_dependencies(service)
+        {
+            required: service.required_features.find_all { |feature| service_registry.find(feature).nil? },
+            optional: service.optional_features.find_all { |feature| service_registry.find(feature).nil? },
+        }
+    end
+
+    def dependants(service)
+        {
+            required: service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.required_features.member? feature } }.reduce(:+),
+            optional: service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.optional_features.member? feature } }.reduce(:+)
+        }
     end
 
     def start_service(service_registration)
@@ -181,9 +266,9 @@ class Core
         if service.state? RunState::ACTIVE
             service.set_state_stopping
 
-            # TODO optimize these below expressions
-            dependant_services_req = service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.required_features.member? feature } }.reduce(:+)
-            dependant_services_opt = service.provided_features.map { |feature| @service_registry.find_all { |srv| srv.optional_features.member? feature } }.reduce(:+)
+            deps = dependants(service)
+            dependant_services_req = deps[:required]
+            dependant_services_opt = deps[:optional]
 
             dependant_services_req.each do |dep_service|
                 stop_service(dep_service)

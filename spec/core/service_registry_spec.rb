@@ -13,7 +13,7 @@ RSpec.describe ServiceRegistry do
             13
         end
     end
-        
+
 
     before(:example) do
         @registry = TestRegistry.new
@@ -119,6 +119,16 @@ RSpec.describe ServiceRegistry do
             expect(services[1].options[:priority]).to eq(2)
             expect(services[2].options[:priority]).to eq(3)
             expect(services[3].options[:priority]).to eq(5)
+        end
+
+        it "should not return uninstalled services" do
+            @registry.register_service :srv1, TestService.new, [ :test ], { priority: 3 }
+            @registry.register_service :srv2, TestService.new, [ :test ], { priority: 5 }
+            @registry.register_service :srv3, TestService.new, [ :test ], { priority: 1 }
+            @registry.register_service :srv4, TestService.new, [ :test ], { priority: 2 }
+
+            @registry.find(:test).service.set_state_uninstalled
+            expect(@registry.find_all(:test).length).to eq(3)
         end
     end
 

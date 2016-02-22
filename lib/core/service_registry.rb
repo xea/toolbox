@@ -30,8 +30,17 @@ module ServiceRegistry
     end
 
     # Unregister a previously registered service by it's id
-    def unregister_service(id)
-        service_registry.delete id
+    def unregister_service(id, &unregistration_callback)
+        if service_registry.has_key? id
+            registration = service_unregistered service_registry[id] if respond_to? :service_unregistered, true
+            unregistration_callback.call registration unless unregistration_callback.nil?
+
+            service_registry.delete id
+
+            registration
+        else
+            # TODO handle this case
+        end
     end
 
     # Retrieve a service registration based on service id
@@ -54,6 +63,8 @@ module ServiceRegistry
             base = base.find_all { |service| blk.call(service.service) }
         end
 
+        base = base.find_all { |service| service.service.state != RunState::UNINSTALLED }
+
         base.sort { |a, b| a.options[:priority] <=> b.options[:priority] }
     end
 
@@ -63,7 +74,7 @@ module ServiceRegistry
     end
 
 protected
-    
+
     # Return the current service registry and initialise it if needed
     def service_registry
         @service_registry ||= {}
@@ -82,6 +93,11 @@ class LocalServiceRegistry
 
     def service_registered(registration)
         registration.service.set_state_installed
+        registration
+    end
+
+    def service_unregistered(registration)
+        registration.service.set_state_uninstalled
         registration
     end
 

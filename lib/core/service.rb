@@ -60,7 +60,7 @@ class SimpleService
 
         class_eval do
             define_method(:initialize) do |*args|
-                # Reset traits is a hack to allow classes to omit feature declaration. 
+                # Reset traits is a hack to allow classes to omit feature declaration.
                 self.class.reset_traits nil
                 self.class.traits.each do |k, v|
                     instance_variable_set("@#{k}", v)
@@ -114,4 +114,3 @@ class ServiceProxy
         end
     end
 end
-

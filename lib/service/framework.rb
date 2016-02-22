@@ -24,7 +24,11 @@ class Framework < Service
     end
 
     def register_service(id, service, features = nil)
-        @core.register_service id, service, features
+        @core.register_service id.to_sym, service, features
+    end
+
+    def unregister_service(id)
+        @core.unregister_service id.to_sym
     end
 
     def stage(reuse_last = false)
@@ -49,4 +53,3 @@ class Framework < Service
         @core.stop_service service_registration unless service_registration.nil?
     end
 end
-

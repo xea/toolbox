@@ -9,6 +9,7 @@ class ModeCore < BaseMode
     register_command(:list_services, "services", "List services")
     register_command(:start_service, "start :service_id", "Start service")
     register_command(:stop_service, "stop :service_id", "Stop service")
+    register_command(:unregister_service, "unregister :service_id", "Unregister service")
     register_command(:direct_shutdown, "shutdown", "Initiate direct shutdown")
     register_command(:exit_mode, "exit", "Exit current mode") { |intp| intp.modes.exit_mode }
 
@@ -17,22 +18,23 @@ class ModeCore < BaseMode
     end
 
     def list_features(out, framework)
-        out.puts @table.print([ "ID", "PROVIDED", "REQUIRED", "OPTIONAL" ], framework.find_services.map { |descriptor| 
-            [ descriptor.service.service_id, 
-              (descriptor.features - [:service]).join(","), 
-              descriptor.service.required_features.join(','), 
-              descriptor.service.optional_features.join(',') 
-            ] 
+        out.puts @table.print([ "ID", "PROVIDED", "REQUIRED", "OPTIONAL" ], framework.find_services.map { |descriptor|
+            [ descriptor.service.service_id,
+              (descriptor.features - [:service]).join(","),
+              descriptor.service.required_features.join(','),
+              descriptor.service.optional_features.join(',')
+            ]
         })
     end
 
     def list_services(out, framework)
-        out.puts @table.print([ "ID", "STATE", "OID", "CLASS" ], framework.find_services.map { |descriptor| 
-            [ descriptor.service.service_id, 
-              descriptor.service.state, 
-              "0x%012x" % descriptor.service.object_id, 
-              descriptor.service.class.name 
-            ] 
+        out.puts @table.print([ "ID", "STATE", "OID", "CLASS", "STATUS" ], framework.find_services.map { |descriptor|
+            [ descriptor.service.service_id,
+              descriptor.service.state,
+              "0x%012x" % descriptor.service.object_id,
+              descriptor.service.class.name,
+              descriptor.service.verbose_state
+            ]
         })
     end
 
@@ -42,6 +44,10 @@ class ModeCore < BaseMode
 
     def start_service(out, framework, service_id)
         framework.start_service service_id
+    end
+
+    def unregister_service(out, framework, service_id)
+        framework.unregister_service service_id
     end
 
     def direct_shutdown(framework, reason = nil)

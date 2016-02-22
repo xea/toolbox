@@ -50,7 +50,7 @@ RSpec.describe Core do
     end
 
     context "#initialize" do
-        
+
         it "should normally initialise with the essential services" do
             expect(@core.framework).to_not be_nil
             expect(@core.service_registry).to_not be_nil
@@ -82,14 +82,32 @@ RSpec.describe Core do
             @pure_core.register_service :test_service, @test_service
             expect(@pure_core.current_stage.length).to eq(1)
             expect(@pure_core.current_stage[0]).to be_a(Array)
-            expect(@pure_core.current_stage[0][0]).to eq(:test_service)
-            expect(@pure_core.current_stage[0][1]).to eq(@test_service)
-            expect(@pure_core.current_stage[0][2]).to eq([:test])
+            expect(@pure_core.current_stage[0][0]).to eq(:+)
+            expect(@pure_core.current_stage[0][1]).to eq(:test_service)
+            expect(@pure_core.current_stage[0][2]).to eq(@test_service)
+            expect(@pure_core.current_stage[0][3]).to eq([:test])
         end
 
         it "should return the id of the newly registered service" do
             result = @pure_core.register_service :test_service, @test_service
             expect(result).to eq(:test_service)
+        end
+    end
+
+    context "#unregister_service" do
+        it "should stop any dependent services" do
+            producer = ProducerService.new
+            consumer = ConsumerService.new
+            @pure_core.register_service :producer, producer
+            @pure_core.register_service :consumer, consumer
+            @pure_core.commit_stage
+            @pure_core.process_service_queue
+            @pure_core.unregister_service :producer
+            @pure_core.commit_stage
+            @pure_core.process_service_queue
+
+            expect(producer.state).to eq(:uninstalled)
+            expect(consumer.state).to eq(:installed)
         end
     end
 
@@ -134,6 +152,70 @@ RSpec.describe Core do
 
             expect(producer.state).to eq(:active)
             expect(consumer.state).to eq(:active)
+        end
+    end
+
+    context "#missing_dependencies" do
+        it "should list all missing feature dependencies" do
+            consumer = ConsumerService.new
+
+            @pure_core.register_service :consumer, consumer
+            @pure_core.commit_stage
+            @pure_core.process_service_queue
+
+            expect(consumer.state).to eq(:installed)
+
+            missing = @pure_core.missing_dependencies(consumer)
+
+            expect(missing[:required]).to_not be_nil
+            expect(missing[:optional]).to_not be_nil
+            expect(missing[:required].length).to eq(1)
+            expect(missing[:optional].length).to eq(0)
+            expect(missing[:required][0]).to eq(:provider)
+        end
+    end
+
+    context "#start" do
+        it "should start registered services without dependencies" do
+        end
+
+        it "should start registered services with only satisfied dependencies" do
+        end
+
+    end
+
+    context "#stop" do
+        it "should stop started services without dependencies" do
+            producer = ProducerService.new
+
+            registration_id = @pure_core.register_service :producer, producer
+            @pure_core.commit_stage
+            @pure_core.process_service_queue
+
+            expect(producer.state).to eq(:active)
+
+            registration = @pure_core.service_registry.find_by_id registration_id
+            @pure_core.stop_service registration
+
+            expect(producer.state).to eq(:resolved)
+        end
+
+        it "should stop dependant services as well" do
+            producer = ProducerService.new
+            consumer = ConsumerService.new
+
+            @pure_core.register_service :producer, producer
+            @pure_core.register_service :consumer, consumer
+            @pure_core.commit_stage
+            @pure_core.process_service_queue
+
+            expect(producer.state).to eq(:active)
+            expect(consumer.state).to eq(:active)
+
+            @pure_core.stop_service(@pure_core.service_registry.find_by_id :producer)
+
+            expect(producer.state).to eq(:resolved)
+            expect(consumer.state).to eq(:resolved)
         end
     end
 
