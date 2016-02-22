@@ -6,7 +6,7 @@ require 'safe_attributes/base'
 class ActiveRecordService < Service
 
     required_features :config
-    provided_features :activerecord
+    provided_features :ar
 
     def start
         @namespaces = {}
