@@ -10,13 +10,14 @@ class ActiveRecordMode < BaseMode
     register_command(:show_ns, "show namespaces", "Show registered namespaces") { |intp, ar, out|
         pt = PrinTable.new
 
+        # [ { id: id, class_name: Example } ]
         entries = ar.namespaces.map do |key, namespace|
             namespace.registered_models.map do |model|
-                [ key ]
+                [ key, model[:id], model[:class_name] ]
             end
         end
 
-        out.puts pt.print([ "NAMESPACE", "MODEL" ], entries)
+        out.puts pt.print([ "NAMESPACE", "MODEL ID", "CLASS" ], entries.flatten(0))
         out.puts "#{entries.length} entries"
     }
 end
