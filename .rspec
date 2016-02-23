@@ -1,2 +1,7 @@
+-I ./lib/
+-I ./packages/
+-I ./packages/*/spec/
 --color
 --require spec_helper
+spec
+packages/*/spec/

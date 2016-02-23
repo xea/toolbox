@@ -1,3 +1,5 @@
+require 'core/service'
+require 'console/mode'
 
 class HealthChecker < Service
 

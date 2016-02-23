@@ -2,6 +2,7 @@ require 'active_record'
 require 'activerecord-jdbc-adapter' if defined? JRUBY_VERSION
 require 'activerecord-jdbcpostgresql-adapter' if defined? JRUBY_VERSION
 require 'safe_attributes/base'
+require 'core/service'
 
 class ActiveRecordService < Service
 
@@ -21,14 +22,35 @@ class ActiveRecordService < Service
     end
 
     def unregister_namespace(namespace_id)
+        ns = @namespaces[namespace_id]
+
+        unless ns.nil?
+            # TODO disconnect from the DB
+        end
+
         @namespaces[namespace_id] = nil
+    end
+
+    def namespace(namespace_id)
+        ActiveRecordNameSpaceProxy.new
+    end
+
+end
+
+class ActiveRecordNameSpaceProxy
+    def lookup(model_id)
+        nil
     end
 end
 
-=begin
-class SandboxDB < ActiveRecord::Base
+module ActiveRecordNameSpace
 
-    self.abstract_class = true
-    establish_connection "sandbox"
+    def registered_models
+        # Example: [ { class_name: ExampleModel } ]
+        []
+    end
+
+    def lookup(model_id)
+        nil
+    end
 end
-=end
