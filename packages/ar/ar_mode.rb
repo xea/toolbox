@@ -17,7 +17,7 @@ class ActiveRecordMode < BaseMode
             end
         end
 
-        out.puts pt.print([ "NAMESPACE", "MODEL ID", "CLASS" ], entries.flatten(0))
+        out.puts pt.print([ "NAMESPACE", "MODEL ID", "CLASS" ], entries.flatten(1))
         out.puts "#{entries.length} entries"
     }
 end
