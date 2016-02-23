@@ -37,6 +37,10 @@ class ActiveRecordService < Service
         ActiveRecordNameSpaceProxy.new
     end
 
+    def namespaces
+        @namespaces
+    end
+
     def feature_console_up(console)
         @console = console
         @console.register_helper :ar, Actor.current
