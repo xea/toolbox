@@ -34,11 +34,11 @@ class ActiveRecordService < Service
     end
 
     def namespace(namespace_id)
-        ActiveRecordNameSpaceProxy.new
+        ActiveRecordNameSpaceProxy.new(@namespaces[namespace_id])
     end
 
     def namespaces
-        @namespaces
+        @namespaces.map { |ns| ActiveRecordNameSpaceProxy.new(ns) }
     end
 
     def feature_console_up(console)

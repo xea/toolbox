@@ -1,7 +1,16 @@
 
 class ActiveRecordNameSpaceProxy
+
+    def initialize(ns)
+        @ns = ns
+    end
+
+    def registered_models
+        @ns.registered_models
+    end
+
     def lookup(model_id)
-        nil
+        @ns.lookup(model_id)
     end
 end
 
