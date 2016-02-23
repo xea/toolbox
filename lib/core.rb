@@ -13,6 +13,8 @@ require 'thread'
 require 'monitor'
 require 'pry'
 
+$:.unshift File.dirname(__FILE__)
+
 # Implements the main framework and administrative logic, eg. module wiring, dependency injection and service location.
 #
 # Instances of this class should not be directly exposed to modules, it's functionality should be accessed through Framework

@@ -21,7 +21,7 @@ class ModeGlobal < BaseMode
     def show_help(intp, out)
         pt = PrinTable.new
         local_cmd, global_cmd = intp.generate_help
-        out.puts pt.print(["PATTERN", "DESCRIPTION"], local_cmd)
-        out.puts pt.print(["PATTERN", "DESCRIPTION"], global_cmd)
+        out.puts pt.print(["PATTERN", "DESCRIPTION"], local_cmd) unless local_cmd.empty?
+        out.puts pt.print(["PATTERN", "DESCRIPTION"], global_cmd) unless global_cmd.empty?
     end
 end

@@ -2,11 +2,13 @@ require 'active_record'
 require 'activerecord-jdbc-adapter' if defined? JRUBY_VERSION
 require 'activerecord-jdbcpostgresql-adapter' if defined? JRUBY_VERSION
 require 'safe_attributes/base'
-require 'core/service'
+require_relative 'ar_mode'
+require_relative 'ar_ns'
 
 class ActiveRecordService < Service
 
     required_features :config
+    optional_features :console
     provided_features :ar
 
     def start
@@ -35,22 +37,16 @@ class ActiveRecordService < Service
         ActiveRecordNameSpaceProxy.new
     end
 
-end
-
-class ActiveRecordNameSpaceProxy
-    def lookup(model_id)
-        nil
-    end
-end
-
-module ActiveRecordNameSpace
-
-    def registered_models
-        # Example: [ { class_name: ExampleModel } ]
-        []
+    def feature_console_up(console)
+        @console = console
+        @console.register_helper :ar, Actor.current
+        @console.register_mode ActiveRecordMode
     end
 
-    def lookup(model_id)
-        nil
+    def feature_console_down(console)
+        @console.unregister_mode ActiveRecordMode
+        @console.unregister_helper :ar
+        @console = nil
     end
+
 end
