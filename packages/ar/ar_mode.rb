@@ -4,7 +4,7 @@ require 'console/table'
 class ActiveRecordMode < BaseMode
 
     mode_id :activerecord
-    access_from :home, "ar", "Enter ActiveRecord browser"
+    access_from :home, "ar :namespace", "Enter ActiveRecord browser"
 
     register_command(:exit_mode, "exit", "Exit ActiveRecord browser") { |intp| intp.modes.exit_mode }
     register_command(:show_ns, "show namespaces", "Show registered namespaces") { |intp, ar, out|
@@ -20,4 +20,8 @@ class ActiveRecordMode < BaseMode
         out.puts pt.print([ "NAMESPACE", "MODEL ID", "CLASS" ], entries.flatten(1))
         out.puts "#{entries.length} entries"
     }
+
+    def post_enter(namespace = nil)
+        puts "entered #{namespace}"
+    end
 end

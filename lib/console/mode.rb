@@ -5,7 +5,7 @@ class BaseMode
 
     # Return metaclass for this class
     def self.metaclass; class << self; self; end; end
-    
+
     # Advanced metaprogramming code for nice, clean traits
     def self.traits( *arr )
         return @traits if arr.empty?
@@ -53,7 +53,7 @@ class BaseMode
     end
 
     # Optionally overridable secondary constructor. Allows initialisation after object construction has been completed
-    # but reference hasn't been returned. 
+    # but reference hasn't been returned.
     #
     # Subclasses may override this for custom initialisation since overriding primary constructor is not advised.
     def construct(*args)
@@ -85,7 +85,11 @@ class BaseMode
     end
 
     def self.access_from(parent_mode_id, access_command, access_command_description)
-        access_command = Command.new("mode_accessor_#{parent_mode_id}_#{self.id}".to_sym, access_command, access_command_description, {}) { |intp| intp.modes.enter_mode self.id }
+        access_command = Command.new("mode_accessor_#{parent_mode_id}_#{self.id}".to_sym, access_command, access_command_description, {}) { |intp, ctx|
+            callback = intp.modes.post_enter_callback(@traits[:mode_id])
+            argv = intp.resolve_args callback, ctx
+            intp.modes.enter_mode self.id, *argv
+        }
         @traits[:mode_accessors] << { parent: parent_mode_id, command: access_command }
     end
 
@@ -99,7 +103,7 @@ class BaseMode
     end
 
     def available_commands
-        commands.values.find_all do |cmd| 
+        commands.values.find_all do |cmd|
             if filters[cmd.id].nil?
                 true
             else

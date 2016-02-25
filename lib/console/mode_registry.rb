@@ -1,6 +1,6 @@
 require_relative "mode"
 
-# Maintains a registry of console modes. Modes are divided into two types: regular modes and global modes. 
+# Maintains a registry of console modes. Modes are divided into two types: regular modes and global modes.
 #
 # Currently, ModeRegistry stores only one global mode instance at a time whereas it can store an arbitrary
 # number of regular modes. The difference between the two types is that regular modes are only availabe if
@@ -43,13 +43,21 @@ class ModeRegistry
     end
 
     # Enter the mode identified by mode_id if it exist or raise an error if it doesn't exist.
-    def enter_mode(mode_id)
+    def enter_mode(mode_id, argv = nil)
         if has_mode? mode_id
             mode = @modes[mode_id].new
             @mode_stack << mode
-            mode.post_enter
+            mode.post_enter(*argv)
         else
             raise "Selected mode (#{mode_id}) can't be found"
+        end
+    end
+
+    # Return the enter mode callback registered to this mode
+    def post_enter_callback(mode_id)
+        if has_mode? mode_id
+            mode = @modes[mode_id].new
+            mode.method :post_enter
         end
     end
 
@@ -78,7 +86,7 @@ class ModeRegistry
         @global_mode
     end
 
-    # Return a list of currently active modes, ie. the currently selected mode (if any) 
+    # Return a list of currently active modes, ie. the currently selected mode (if any)
     # plus the current global mode (if any)
     def active_modes
         modes = []
