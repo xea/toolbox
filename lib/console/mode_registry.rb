@@ -43,7 +43,7 @@ class ModeRegistry
     end
 
     # Enter the mode identified by mode_id if it exist or raise an error if it doesn't exist.
-    def enter_mode(mode_id, argv = nil)
+    def enter_mode(mode_id, *argv)
         if has_mode? mode_id
             mode = @modes[mode_id].new
             @mode_stack << mode

@@ -1,0 +1,7 @@
+id: ActiveRecordExample
+version: 0.1
+dependencies:
+    - ar
+services:
+    ar:
+        class: ActiveRecordExampleService

@@ -1,7 +1,12 @@
 
 class ActiveRecordNameSpaceProxy
 
-    def initialize(ns)
+    def id
+        @id
+    end
+
+    def initialize(id, ns)
+        @id = id
         @ns = ns
     end
 
@@ -15,6 +20,10 @@ class ActiveRecordNameSpaceProxy
 end
 
 module ActiveRecordNameSpace
+
+    def id
+        ""
+    end
 
     def registered_models
         # Example: [ { class_name: ExampleModel } ]
