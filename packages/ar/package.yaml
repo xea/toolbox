@@ -1,5 +1,5 @@
 id: ActiveRecord
 version: 0.1
 services:
-    ar:
+    ar_example:
         class: ActiveRecordService

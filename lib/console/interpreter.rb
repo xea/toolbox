@@ -45,7 +45,6 @@ class Interpreter
 
         if clean_input.length > 0
             command = find_command(clean_input) || @modes.global_mode.command_not_found
-
             user_args = extract_user_args command, clean_input
             command_ctx = build_context(command, user_args)
             args = resolve_args(command, command_ctx)
@@ -99,6 +98,7 @@ class Interpreter
         ctx.helpers = @helpers.clone
         ctx.tables = @tables.clone
         ctx.helpers[:current_mode] = @modes.current_mode
+        ctx.helpers[:ctx] = ctx
         ctx
     end
 
@@ -184,6 +184,10 @@ class InterpreterState
 
     def generate_help
         @interpreter.generate_help
+    end
+
+    def resolve_args(method, ctx)
+        @interpreter.resolve_args(method, ctx)
     end
 end
 
