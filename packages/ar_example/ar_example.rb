@@ -25,8 +25,17 @@ class ActiveRecordExampleService < Service
     end
 
     class User
+
+        def self.attributes
+            [ :uid, :name, :email, :enabled ]
+        end
     end
 
     class Preferences
+
+        def self.attributes
+            [ :uid, :key, :value ]
+        end
     end
+
 end
