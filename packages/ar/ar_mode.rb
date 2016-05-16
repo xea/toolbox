@@ -38,19 +38,20 @@ class ActiveRecordMode < BaseMode
     end
 
     def use_namespace(out, ar, namespace_id)
-        @ns = ar.namespace(namespace_id)
+        @ns = ar.namespace(namespace_id.to_s.to_sym)
 
         out.puts "Currently used namespace: #{@ns.id}"
     end
 
     def list_model(out, ar, model_id)
-        model = ar.lookup(model_id)
+        model = @ns.lookup(model_id.to_sym)
 
         if model.nil?
             out.puts "Couldn't find selected model"
         else
             pt = PrinTable.new
 
+            out.puts pt.print([ "ID" ], model[:class_name].all.map { |i| [ i.id ] })
         end
     end
 end
