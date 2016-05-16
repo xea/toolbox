@@ -8,7 +8,7 @@ class ActiveRecordMode < BaseMode
 
     register_command(:exit_mode, "exit", "Exit ActiveRecord browser") { |intp| intp.modes.exit_mode }
     register_command(:list_model, "list :model_id", "List model instances")
-    register_command(:select_namespace, "select :namespace_id", "Select the current namespace")
+    register_command(:use_namespace, "use :namespace_id", "Use the current namespace")
 
     register_command(:show_namespaces, "show namespaces", "Show registered namespaces") { |intp, ar, out|
         pt = PrinTable.new
@@ -34,13 +34,13 @@ class ActiveRecordMode < BaseMode
     }
 
     def post_enter(out, ar, namespace_id)
-        select_namespace out, ar, namespace_id
+        use_namespace out, ar, namespace_id
     end
 
-    def select_namespace(out, ar, namespace_id)
+    def use_namespace(out, ar, namespace_id)
         @ns = ar.namespace(namespace_id)
 
-        out.puts "Currently selected namespace: #{@ns.id}"
+        out.puts "Currently used namespace: #{@ns.id}"
     end
 
     def list_model(out, ar, model_id)
