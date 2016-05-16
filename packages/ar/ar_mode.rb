@@ -24,8 +24,8 @@ class ActiveRecordMode < BaseMode
 
         # [ { id: id, class_name: Example } ]
         entries = ar.namespaces.map do |namespace|
-            namespace.registered_models.map do |key, model|
-                [ namespace.id, key, model ]
+            namespace.registered_models.map do |model|
+                [ namespace.id, model[:id], model[:class_name].to_s ]
             end
         end
 
