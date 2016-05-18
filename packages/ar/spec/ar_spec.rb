@@ -1,3 +1,4 @@
+require 'core/service'
 require 'ar/ar'
 
 RSpec.describe ActiveRecordService do

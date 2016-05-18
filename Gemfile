@@ -18,6 +18,3 @@ gem 'pry'
 gem 'celluloid'
 gem 'warbler'
 
-#gem 'pg'
-#gem 'json'
-#gem 'hitimes'
