@@ -3,6 +3,7 @@ class CoreTransaction
     def initialize(core = nil)
         @core = core
         @tx_requests = []
+        @committed = false
 
         restricted_methods = []
         local_methods = @core.methods - (Object.methods - restricted_methods)
@@ -15,14 +16,19 @@ class CoreTransaction
     end
 
     def commit
-        @core.commit_tx(@tx_requests)
+        @core.commit_tx(@tx_requests) unless committed?
+        @committed = true
     end
 
     def rollback
-        @tx_requests = []
+        @tx_requests = [] unless committed?
     end
 
     def dirty?
         !@tx_requests.empty?
+    end
+
+    def committed?
+        @committed
     end
 end

@@ -5,7 +5,7 @@ source 'https://rubygems.org'
 end
 
 gem 'simplecov'
-gem 'activerecord', '~> 4.1.8'
+gem 'activerecord', '~> 4.2.6'
 gem 'activerecord-jdbc-adapter', '~> 1.3', platform: :jruby
 gem 'activerecord-jdbcpostgresql-adapter', platform: :jruby
 gem 'pg', platform: :mri
@@ -17,4 +17,3 @@ gem 'highline'
 gem 'pry'
 gem 'celluloid'
 gem 'warbler'
-

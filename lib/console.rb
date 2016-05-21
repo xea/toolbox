@@ -14,7 +14,7 @@ class Console
     attr_reader :interpreter
 
     def initialize(terminal = Terminal.new)
-        @term = Terminal.new
+        @term = terminal.respond_to?(:puts) ? terminal : Terminal.new
         @buffer = LineBuffer.new
         @history = History.new ".toolbox.history"
         @interpreter = Interpreter.new

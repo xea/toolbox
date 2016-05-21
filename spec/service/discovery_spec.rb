@@ -7,7 +7,8 @@ RSpec.describe DiscoveryService do
             srv = DiscoveryService.new
             srv.init
 
-            
+            # TODO add feature to query services
         end
     end
+
 end
