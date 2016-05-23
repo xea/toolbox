@@ -31,6 +31,7 @@ class ActiveRecordService < Service
         end
 
         @namespaces[namespace_id] = nil
+        @namespaces.delete namespace_id
     end
 
     def namespace(namespace_id)

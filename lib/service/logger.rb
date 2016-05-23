@@ -13,6 +13,10 @@ class LoggerService < Service
         @target = Logger.new(target)
     end
 
+    def info(message)
+        @target.info message
+    end
+
     def method_missing(method, *args, &blk)
         @target.send method, *args, &blk
     end

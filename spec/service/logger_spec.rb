@@ -2,7 +2,7 @@ require 'service/logger'
 
 RSpec.describe LoggerService do
 
-    class TestTarget
+    class TestTarget < IO
 
         attr_reader :counter, :buffer
 
@@ -26,6 +26,12 @@ RSpec.describe LoggerService do
     before (:example) do
         @target = TestTarget.new
         @logger = LoggerService.new @target
+    end
+
+    context "#info" do
+        it "should send a log message to the info logger" do
+            #TODO implement this
+        end
     end
 
 end
