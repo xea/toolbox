@@ -58,7 +58,6 @@ RSpec.describe Console do
     context "#read_input" do
         it "should do stuff" do
             input = @console.read_input
-            binding.pry
             #expect(input).to be_nil
         end
     end

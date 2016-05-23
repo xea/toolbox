@@ -1,6 +1,7 @@
 require 'console/mode'
 
 RSpec.describe BaseMode do
+
     class EmptyMode < BaseMode
     end
 
@@ -12,6 +13,7 @@ RSpec.describe BaseMode do
         mode_id :test
 
         attr_reader :calls
+        attr_accessor :filter_switch
 
         def post_enter
             @calls << :post_enter
@@ -24,10 +26,13 @@ RSpec.describe BaseMode do
         def construct(*args)
             @calls = []
             @calls << :construct
+            @filter_switch = false
         end
 
         register_command(:inline_command, "inline", "") { @calls << :inline_command }
         register_command(:test_command, "test", "")
+        register_command(:invisible_command, "invisible", "", scope(false)) { puts "this command shouldn't appear anywhere" }
+        register_command(:filtered_command, "filtered", "", scope(true) { @filter_switch }) { puts "this command is filtered" }
 
         def test_command
             @calls << :test_command
@@ -70,10 +75,24 @@ RSpec.describe BaseMode do
         it "should list commands by default" do
             mode = ModeTestMode.new
             expect(mode.available_commands).to_not be_nil
-            expect(mode.available_commands.length).to eq(2)
+            expect(mode.available_commands.length).to eq(3)
             expect(mode.available_commands[0]).to be_a(Command)
         end
 
+        it "considers visibility filters" do
+            mode = ModeTestMode.new
+
+            expect(mode.filter_switch).to eq(false)
+            original_length = mode.available_commands.length
+
+            mode.filter_switch = true
+
+            expect(mode.available_commands.length).to eq(original_length + 1)
+
+            mode.filter_switch = false
+
+            expect(mode.available_commands.length).to eq(original_length)
+        end
     end
 
     context "#find_command" do
@@ -95,6 +114,15 @@ RSpec.describe BaseMode do
         it "should register inline commands as instance methods" do
             mode = ModeTestMode.new
             expect(mode.respond_to? :inline_command).to be_truthy
+        end
+    end
+
+    context "#visible_commands" do
+        it "should show only those available commands that are visible too" do
+            mode = ModeTestMode.new
+            expect(mode.visible_commands).to_not be_nil
+
+            expect(mode.visible_commands.length).to eq(mode.available_commands.length - 1)
         end
     end
 end
