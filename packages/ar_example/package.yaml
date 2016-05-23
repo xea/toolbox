@@ -3,5 +3,5 @@ version: 0.1
 dependencies:
     - ar
 services:
-    ar:
+    ar_example:
         class: ActiveRecordExampleService

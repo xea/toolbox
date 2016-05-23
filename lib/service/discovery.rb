@@ -144,7 +144,7 @@ class DiscoveryService < Service
         if candidates.empty?
             # try resolving dependencies
             unless package_descriptor['dependencies'].nil?
-                unresolved_deps = package_descriptor['dependencies'].find_all { |dep| @package_db[:installed].keys.member? dep }
+                unresolved_deps = package_descriptor['dependencies'].find_all { |dep| !@package_db[:installed].keys.member? dep }
 
                 unless unresolved_deps.empty?
                     @logger.error("Can't resolve dependencies: #{unresolved_deps} for package #{internal_id}")
