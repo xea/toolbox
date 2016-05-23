@@ -23,7 +23,9 @@ class ActiveRecordMode < BaseMode
         pt = PrinTable.new
 
         # [ { id: id, class_name: Example } ]
-        entries = ar.namespaces.map do |namespace|
+        nss = @ns.nil? ? ar.namespaces : [ @ns ]
+
+        entries = nss.map do |namespace|
             namespace.registered_models.map do |model|
                 [ namespace.id, model[:id], model[:class_name].to_s ]
             end
@@ -34,7 +36,7 @@ class ActiveRecordMode < BaseMode
     }
 
     def post_enter(out, ar, namespace_id)
-        use_namespace out, ar, namespace_id
+        use_namespace out, ar, namespace_id unless namespace_id.nil?
     end
 
     def use_namespace(out, ar, namespace_id)

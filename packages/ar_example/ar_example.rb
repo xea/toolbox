@@ -13,10 +13,11 @@ class ActiveRecordExampleService < Service
     class ExampleNamespace
 
         def registered_models
-            {
-                user: User,
-                preferences: Preferences
-            }
+            [
+                { id: :user, class_name: User },
+                { id: :preferences, class_name: Preferences }
+            ]
+
         end
 
         def lookup(model_id)
