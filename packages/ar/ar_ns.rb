@@ -62,6 +62,8 @@ module ActiveRecordBaseProxy
             core_fields + essential_fields + basic_fields
         when :verbose
             core_fields + essential_fields + basic_fields + verbose_fields
+        else
+            attributes.keys
         end
     end
 
