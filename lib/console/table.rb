@@ -7,6 +7,8 @@ class PrinTable
 
     # TODO add pagination
 
+    #
+    # example:  puts pt.print(['a', 'b', 'c'], [['11', '22', '33'], ['444', '555', '666'], ['7777', nil, '8888']])
     def print(headers, data, style = @default_style)
         a_headers = headers || @header_cache
         a_data = data || @data_cache
@@ -26,7 +28,8 @@ class PrinTable
         when :simple
             print_simple_table(headers, data)
         when :db
-            print_db_table(headers, data)
+            row_count = 0
+            print_fmt_table(headers, data, {}, lambda { |row| row_count += 1 }) + [ "#{row_count} row(s)" ]
         else
             print_simple_table(headers, data)
         end
@@ -79,9 +82,9 @@ class PrinTable
                 result << print_fmt_separator(field_lengths, fmt) if fmt[:sh]
             end
 
-            result += data.map { |row| 
+            result += data.map { |row|
                 aggregator.yield row unless aggregator.nil?
-                print_fmt_row(row, field_lengths.map { |x| x * -1 }, fmt) 
+                print_fmt_row(row, field_lengths.map { |x| x * -1 }, fmt)
             }
         else
             []
@@ -90,7 +93,7 @@ class PrinTable
 
 
     def max_field_count(data)
-        if data.nil? or !data.kind_of?(Array) 
+        if data.nil? or !data.kind_of?(Array)
             0
         else
             data.collect { |row| (row || []).length }.max || 0

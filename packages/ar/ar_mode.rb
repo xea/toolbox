@@ -53,7 +53,7 @@ class ActiveRecordMode < BaseMode
         else
             pt = PrinTable.new
 
-            out.puts pt.print([ "ID" ], model[:class_name].all.map { |i| [ i.id ] })
+            out.puts pt.print(model[:class_name].new.filter_fields(:verbose), model[:class_name].all.map { |instance| instance.flatten_fields(:verbose) }, :db)
         end
     end
 end

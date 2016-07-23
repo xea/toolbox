@@ -15,27 +15,63 @@ class ActiveRecordExampleService < Service
         def registered_models
             [
                 { id: :user, class_name: User },
-                { id: :preferences, class_name: Preferences }
+                { id: :domain, class_name: Domain },
+                { id: :server, class_name: Server }
             ]
 
         end
 
         def lookup(model_id)
-            { model_id => registered_models[model_id.to_sym] }
+            #{ model_id => registered_models[model_id.to_sym] }
+            registered_models.find { |e| e[:id] == model_id }
         end
     end
 
-    class User
+    class ExampleBase < ActiveRecord::Base
 
-        def self.attributes
-            [ :uid, :name, :email, :enabled ]
+        include ActiveRecordBaseProxy
+
+        DEFAULT_CONNECTION = { adapter: "postgresql", hostname: "localhost", database: "ar_example", username: "postgres" }
+
+        self.abstract_class = true
+        establish_connection DEFAULT_CONNECTION
+
+        def core_fields
+            [ :rowid ]
         end
     end
 
-    class Preferences
+    class User < ExampleBase
+        has_many :domains
 
-        def self.attributes
-            [ :uid, :key, :value ]
+        def basic_fields
+            [ :name ]
+        end
+
+        def verbose_fields
+            [ :email ]
+        end
+    end
+
+    class Domain  < ExampleBase
+        belongs_to :user
+
+        has_many :servers
+
+        def basic_fields
+            [ :domain ]
+        end
+    end
+
+    class Server < ExampleBase
+        belongs_to :domain
+
+        def basic_fields
+            [ :hostname, :service ]
+        end
+
+        def verbose_fields
+            [ :port ]
         end
     end
 
