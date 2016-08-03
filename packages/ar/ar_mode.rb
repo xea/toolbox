@@ -1,5 +1,8 @@
 require 'console/mode'
 require 'console/table'
+require 'ast'
+
+include AST::Sexp
 
 class ActiveRecordMode < BaseMode
 
@@ -53,7 +56,229 @@ class ActiveRecordMode < BaseMode
         else
             pt = PrinTable.new
 
+            tokens = ARQLLexer.new.tokenize("select user{name: 'Alex Pecsi', address: lofasz}%3+10!")[:tokens]
+            ast, remaining_tokens = ARQLCommandParser.new.parse(tokens)
+
+            command = ARQLProcessor.new.process ast
+
             out.puts pt.print(model[:class_name].new.filter_fields(:verbose), model[:class_name].all.map { |instance| instance.flatten_fields(:verbose) }, :db)
+        end
+    end
+end
+
+class ARQLProcessor < AST::Processor
+
+    def on_select_expr(node)
+    end
+
+end
+
+class ARQLCommandParser
+
+    def initialize
+    end
+
+    def parse(tokens)
+        raise "Empty input" if tokens.nil? or tokens.length == 0
+
+        if tokens.first.type == :word
+            case tokens.first.children.first.to_s.downcase
+            when "select"
+                parse_select(tokens[1..-1])
+            else
+                raise "Unknown command: #{tokens.first.children.first.to_s}"
+            end
+        else
+            raise "Commands must start with letters"
+        end
+    end
+
+    def parse_select(tokens)
+        model, remaining_tokens = parse_model_expression(tokens)
+        partition, remaining_tokens = parse_partition_expression(remaining_tokens, true)
+        verbosity, remaining_tokens = parse_verbosity_expression(remaining_tokens, true)
+
+        [ s(:select_expr, model, partition, verbosity), remaining_tokens ]
+    end
+
+    # Used to parse expressions that can return a single model name or a list of model names
+    # TODO currently this supports only singular model expressions
+    # eg. (:model_expr, [:user, :domain])
+    def parse_model_expression(tokens)
+        raise "Missing model definition" if tokens.nil? or tokens.length == 0
+
+        if tokens.first.type == :word
+            model_ids = tokens.first.children.map { |c| s(:model_id, c) }
+            model_clause, remaining_tokens = parse_clause(tokens[1..-1], true)
+            [ s(:model_expr, s(:model_ids, model_ids), model_clause), remaining_tokens ]
+        else
+            raise "Invalid model definition: #{tokens.first.to_s}"
+        end
+    end
+
+    # It is used to parse clause expressions that introduce restrictions on model definitions
+    # similarly to WHERE clauses in SQL
+    def parse_clause(tokens, may_fail = false)
+        raise "Missing clause definition" if !may_fail and (tokens.nil? or tokens.length == 0)
+
+        if tokens.first.type == :brace_open
+            if tokens.find { |token| token.type == :brace_close }.nil?
+                raise "Unmatched closing brace"
+            else
+                clause_tokens = tokens[1..-1].take_while { |token| token.type != :brace_close }
+
+                [ s(:model_clause, parse_key_value_pairs(clause_tokens)), tokens[(2 + clause_tokens.length)..-1] ]
+            end
+        elsif may_fail
+            [ s(:model_clause), tokens ]
+        else
+            raise "Invalid clause syntax at: #{tokens.first.to_s}"
+        end
+    end
+
+    def parse_key_value_pairs(tokens)
+        tokens.reduce({ state: :key, current_key: nil, data: {}}) { |acc, x|
+            case acc[:state]
+            when :key
+                case x.type
+                when :word
+                    # delimiter state means the : symbol between the key and the value
+                    acc[:state] = :delimiter
+                    acc[:current_key] = x.children.first
+                when :number
+                    # separator state means the , symbol between key-value pairs
+                    acc[:state] = :separator
+                    acc[:id] = x.children.first
+                else
+                    raise "Invalid key definition: #{x.children.first.to_s}"
+                end
+            when :separator
+                if x.type == :symbol and x.children.first == ","
+                    acc[:state] = :key
+                    acc[:current_key] = nil
+                else
+                    raise "Invalid key separator: #{x.children.first.to_s}"
+                end
+            when :delimiter
+                if x.type == :symbol and x.children.first == ":"
+                    acc[:state] = :value
+                else
+                    raise "Invalid delimiter: #{x.children.first.to_s}"
+                end
+            when :value
+                case x.type
+                when :word
+                    acc[:state] = :separator
+                    acc[:data][acc[:current_key]] = x.children.first
+                when :number
+                    acc[:state] = :separator
+                    acc[:data][acc[:current_key]] = x.children.first
+                when :quoted
+                    acc[:state] = :separator
+                    acc[:data][acc[:current_key]] = x.children.first
+                else
+                    raise "Illegal value: #{x.children.first.to_s}"
+                end
+            end
+
+            acc
+        }[:data]
+    end
+
+    def parse_partition_expression(tokens, may_fail = false)
+        raise "Missing partition definition" if !may_fail and (tokens.nil? or tokens.length == 0)
+
+        s(:partition_expr, { limit: -1, offset: 0 })
+    end
+
+    def parse_verbosity_expression(tokens, may_fail = false)
+        raise "Missing verbosity definition" if !may_fail and (tokens.nil? or tokens.length == 0)
+
+        return [ s(:verbosity, :default), [] ] if tokens.nil? or tokens.length == 0
+
+        case tokens.first.children.first
+        when "+"
+            [ s(:verbosity, :verbose), tokens[1..-1] ]
+        when "!"
+            [ s(:verbosity, :full), tokens[1..-1] ]
+        else
+            [ s(:verbosity, :default), tokens ]
+        end
+    end
+end
+
+# Active Record Query Language
+class ARQLLexer
+    def tokenize(input)
+        input.to_s.strip.chars.reduce({ tokens: [], mode: :neutral }) { |acc, current|
+            case acc[:mode]
+            when :neutral
+                read_neutral acc, current
+            when :word
+                read_word acc, current
+            when :number
+                read_number acc, current
+            when :quoted
+                read_quoted acc, current
+            end
+        }
+    end
+
+    def read_neutral(acc, current)
+        case current
+        when /[a-zA-Z]/
+            { tokens: acc[:tokens] << s(:word, current), mode: :word }
+        when /[0-9]/
+            { tokens: acc[:tokens] << s(:number, current), mode: :number }
+        when /[{]/
+            { tokens: acc[:tokens] << s(:brace_open), mode: :neutral }
+        when /[}]/
+            { tokens: acc[:tokens] << s(:brace_close), mode: :neutral }
+        when /'/
+            { tokens: acc[:tokens] << s(:quoted, ""), mode: :quoted }
+        when /[\s]/
+            acc
+        else
+            { tokens: acc[:tokens] << s(:symbol, current), mode: :neutral }
+        end
+    end
+
+    def read_word(acc, current)
+        case current
+        when /[\s]/
+            { tokens: acc[:tokens], mode: :neutral }
+        when /[{]/
+            { tokens: acc[:tokens] << s(:brace_open), mode: :neutral }
+        when /[}]/
+            { tokens: acc[:tokens] << s(:brace_close), mode: :neutral }
+        when /[a-zA-Z0-9_-]/
+            { tokens: acc[:tokens][0...-1] << s(:word, (acc[:tokens][-1].children[0] + current)), mode: :word }
+        else
+            { tokens: acc[:tokens] << s(:symbol, current), mode: :neutral }
+        end
+    end
+
+    def read_number(acc, current)
+        case current
+        when /[0-9]/
+            { tokens: acc[:tokens][0...-1] << s(:number, acc[:tokens][-1].children[0] + current), mode: :number }
+        when /[{]/
+            { tokens: acc[:tokens] << s(:brace_open), mode: :neutral }
+        when /[}]/
+            { tokens: acc[:tokens] << s(:brace_close), mode: :neutral }
+        when /[\s]/
+            { tokens: acc[:tokens], mode: :neutral }
+        else
+            read_neutral({ tokens: acc[:tokens], mode: :neutral }, current)
+        end
+    end
+
+    def read_quoted(acc, current)
+        case current
+        when /'/
+            { tokens: acc[:tokens], mode: :neutral }
+        else
+            { tokens: acc[:tokens][0...-1] << s(:quoted, acc[:tokens][-1].children[0] + current), mode: :quoted }
         end
     end
 end

@@ -52,6 +52,8 @@ module ActiveRecordBaseProxy
         []
     end
 
+    # Return an array of symbols representing fields corresponding to the selected
+    # verbosity level or all if none was specified
     def filter_fields(verbosity)
         case verbosity
         when :core
@@ -78,6 +80,8 @@ module ActiveRecordBaseProxy
 				.join(" ") + "ELSE #{default.kind_of?(String)? "'" + default + "'" : default} END"
 	end
 
+    # Allows preformatting an attribute by attempting to call format_#{attribute}
+    # if it exists.
     def resolve_attribute(key)
         if respond_to? "format_#{key}".to_sym
             self.send "format_#{key}".to_sym
@@ -86,6 +90,11 @@ module ActiveRecordBaseProxy
         end
     end
 
+    # Provides an easy way of resolving and displaying objects that are in a
+    # one-to-one or one-to-many relationship with this objects
+    #
+    # example User.first.reflookup(:details, :rowid, :emailaddress) would
+    # display the emailaddress of the current user
     def reflookup(relation, rid, desc)
         rel = send relation
 
