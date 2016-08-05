@@ -8,7 +8,11 @@ class Command
         @description = description
         @pattern = pattern
         @options = options
-        @signature = Signature.new pattern
+        if @options[:dynamic]
+            @signature = nil
+        else
+            @signature = Signature.new pattern
+        end
     end
 
     def method=(method)

@@ -48,6 +48,23 @@ class ActiveRecordMode < BaseMode
         out.puts "Currently used namespace: #{@ns.id}"
     end
 
+    def dynamic_command(input)
+        tokens = ARQLLexer.new.tokenize(input)[:tokens]
+        ast, remaining_tokens = ARQLCommandParser.new.parse(tokens)
+
+        begin
+            command_list = ARQLProcessor.new.process ast
+
+            action = -> {
+                command_list.reduce(@ns) { |acc, msg| acc.send msg[0], *(msg[1]), &msg[2] }
+            }
+
+            Command.new(:dynamic, "", "", { dynamic: true }, &action)
+        rescue e
+            
+        end
+    end
+
     def list_model(out, ar, model_id)
         model = @ns.lookup(model_id.to_sym)
 
@@ -56,11 +73,6 @@ class ActiveRecordMode < BaseMode
         else
             pt = PrinTable.new
 
-            tokens = ARQLLexer.new.tokenize("select user{name: 'Alex Pecsi', address: lofasz}%3+10!")[:tokens]
-            ast, remaining_tokens = ARQLCommandParser.new.parse(tokens)
-
-            command = ARQLProcessor.new.process ast
-
             out.puts pt.print(model[:class_name].new.filter_fields(:verbose), model[:class_name].all.map { |instance| instance.flatten_fields(:verbose) }, :db)
         end
     end
@@ -68,7 +80,62 @@ end
 
 class ARQLProcessor < AST::Processor
 
+    def initialize
+        super
+    end
+
     def on_select_expr(node)
+        selexpr = process_all(node).flatten(1)
+
+        selexpr
+    end
+
+    def on_model_expr(node)
+        process_all(node).flatten(1)
+    end
+
+    def on_model_ids(node)
+        process_all(node).map { |n|
+            [
+                [ :lookup, [ n.to_s.to_sym ] ],
+                [ :[], [ :class_name  ] ]
+            ]
+        }.flatten(1)
+    end
+
+    def on_model_id(node)
+        node.children.first
+    end
+
+    def on_model_clause(node)
+        if node.children.empty?
+            [[ :all, [] ]]
+        else
+            node.children.first.map { |key, value|
+                [ :where, [ { key.to_sym => value } ] ]
+            }
+        end
+    end
+
+    def on_partition_expr(node)
+        part = node.children.first
+        result = []
+
+        if part[:limit] >= 0
+            result << [ :limit, [ part[:limit] ] ]
+        end
+
+        if part[:offset] > 0
+            result << [ :offset, [ part[:offset] ] ]
+        end
+
+        result
+    end
+
+    def on_verbosity(node)
+        [[ :map, [], lambda { |e|
+            e.flatten_fields(node.children.first)
+        } ]]
     end
 
 end
@@ -107,10 +174,10 @@ class ARQLCommandParser
     def parse_model_expression(tokens)
         raise "Missing model definition" if tokens.nil? or tokens.length == 0
 
-        if tokens.first.type == :word
-            model_ids = tokens.first.children.map { |c| s(:model_id, c) }
+        if tokens.length > 0 and tokens.first.type == :word
+            model_ids = tokens.first.children.reduce(s(:model_ids)){ |acc, c| acc.append(s(:model_id, c)) }
             model_clause, remaining_tokens = parse_clause(tokens[1..-1], true)
-            [ s(:model_expr, s(:model_ids, model_ids), model_clause), remaining_tokens ]
+            [ s(:model_expr, model_ids, model_clause), remaining_tokens ]
         else
             raise "Invalid model definition: #{tokens.first.to_s}"
         end
@@ -121,7 +188,7 @@ class ARQLCommandParser
     def parse_clause(tokens, may_fail = false)
         raise "Missing clause definition" if !may_fail and (tokens.nil? or tokens.length == 0)
 
-        if tokens.first.type == :brace_open
+        if tokens.length > 0 and tokens.first.type == :brace_open
             if tokens.find { |token| token.type == :brace_close }.nil?
                 raise "Unmatched closing brace"
             else
@@ -280,5 +347,11 @@ class ARQLLexer
         else
             { tokens: acc[:tokens][0...-1] << s(:quoted, acc[:tokens][-1].children[0] + current), mode: :quoted }
         end
+    end
+end
+
+class Object
+    def map(&func)
+        func.call self
     end
 end

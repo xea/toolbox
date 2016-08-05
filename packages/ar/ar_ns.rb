@@ -69,7 +69,7 @@ module ActiveRecordBaseProxy
         end
     end
 
-    def flatten_fields(verbosity)
+    def flatten_fields(verbosity, include_headers = false)
         filter_fields(verbosity).map { |attr| resolve_attribute(attr) }
     end
 

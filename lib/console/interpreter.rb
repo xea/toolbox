@@ -44,7 +44,7 @@ class Interpreter
         clean_input = sanitize_input raw_input
 
         if clean_input.length > 0
-            command = find_command(clean_input) || @modes.global_mode.command_not_found
+            command = find_command(clean_input) || @modes.current_mode.dynamic_command(clean_input) || @modes.global_mode.command_not_found
             user_args = extract_user_args command, clean_input
             command_ctx = build_context(command, user_args)
             args = resolve_args(command, command_ctx)
