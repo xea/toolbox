@@ -2,6 +2,8 @@ require 'console/mode'
 require 'console/table'
 require 'ast'
 
+require_relative 'ar_vm'
+
 include AST::Sexp
 
 class ActiveRecordMode < BaseMode
@@ -49,19 +51,34 @@ class ActiveRecordMode < BaseMode
     end
 
     def dynamic_command(input)
-        tokens = ARQLLexer.new.tokenize(input)[:tokens]
-        ast, remaining_tokens = ARQLCommandParser.new.parse(tokens)
-
         begin
-            command_list = ARQLProcessor.new.process ast
+            tokens = ARQLLexer.new.tokenize(input)[:tokens]
+            ast, remaining_tokens = ARQLCommandParser.new.parse(tokens)
 
-            action = -> {
-                command_list.reduce(@ns) { |acc, msg| acc.send msg[0], *(msg[1]), &msg[2] }
+            command_list = ARQLProcessor.new.process ast
+            vm = ARQLVM.new @ns
+
+            # the action lambda is dependency-injected
+            action = -> (out) {
+                command_list.each { |instr| vm.send instr[0], *(instr[1]), &instr[2] }
+                process_object(vm.pop, out)
             }
 
             Command.new(:dynamic, "", "", { dynamic: true }, &action)
-        rescue e
-            
+        rescue => e
+            puts "ERROR"
+        end
+    end
+
+    def process_object(result, out)
+        case result.type
+        when :select_result
+            pt = PrinTable.new
+
+            head = result.children.first[0]
+            body = result.children.first[1]
+
+            out.puts pt.print(head, body, :db)
         end
     end
 
@@ -85,9 +102,11 @@ class ARQLProcessor < AST::Processor
     end
 
     def on_select_expr(node)
-        selexpr = process_all(node).flatten(1)
+        process_all(node).flatten(1) << [ :apply, [], -> (model, data, verbosity) {
+            header = model.new.filter_fields(verbosity)
 
-        selexpr
+            s(:select_result, [ header, data ])
+        } ]
     end
 
     def on_model_expr(node)
@@ -97,8 +116,7 @@ class ARQLProcessor < AST::Processor
     def on_model_ids(node)
         process_all(node).map { |n|
             [
-                [ :lookup, [ n.to_s.to_sym ] ],
-                [ :[], [ :class_name  ] ]
+                [ :select_model, [ n.to_s.to_sym ] ]
             ]
         }.flatten(1)
     end
@@ -109,10 +127,13 @@ class ARQLProcessor < AST::Processor
 
     def on_model_clause(node)
         if node.children.empty?
-            [[ :all, [] ]]
+            [
+                [ :dup, [] ],
+                [ :apply, [], -> (model) { model.all } ]
+            ]
         else
             node.children.first.map { |key, value|
-                [ :where, [ { key.to_sym => value } ] ]
+                [ :apply, [], -> (model) { model.where(key.to_sym => value) } ]
             }
         end
     end
@@ -122,20 +143,21 @@ class ARQLProcessor < AST::Processor
         result = []
 
         if part[:limit] >= 0
-            result << [ :limit, [ part[:limit] ] ]
+            result << [ :apply, [], -> (model) { model.limit part[:limit] } ]
         end
 
         if part[:offset] > 0
-            result << [ :offset, [ part[:offset] ] ]
+            result << [ :apply, [], -> (model) { model.offset part[:offset] } ]
         end
 
         result
     end
 
     def on_verbosity(node)
-        [[ :map, [], lambda { |e|
-            e.flatten_fields(node.children.first)
-        } ]]
+        [
+            [ :apply, [], -> (model) { model.map { |e| e.flatten_fields(node.children.first) } } ],
+            [ :push, [ node.children.first ] ]
+        ]
     end
 
 end
