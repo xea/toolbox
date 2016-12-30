@@ -94,4 +94,23 @@ RSpec.describe ARQLVM do
             expect(vm.size).to eq(0)
         end
     end
+
+    context '#filter' do
+        it 'should raise an error if the stack was empty' do
+            vm = ARQLVM.new
+
+            expect { vm.filter { |i| i.id = 1 } }.to raise_error("Can not apply filter to an empty stack")
+        end
+
+        it 'should leave the same type of collection that was filtered' do
+            vm = ARQLVM.new
+
+            vm.push [ 2, 3, 4, 5 ]
+            vm.filter { |i| i < 4 }
+            expect(vm.size).to eq(1)
+            item = vm.pop
+            expect(item.class).to eq(Array)
+            expect(item.length).to eq(2)
+        end
+    end
 end
