@@ -2,6 +2,8 @@ require 'console/mode'
 require 'console/table'
 require 'ast'
 
+require_relative 'ar_vm'
+
 include AST::Sexp
 
 class ActiveRecordMode < BaseMode
@@ -12,6 +14,13 @@ class ActiveRecordMode < BaseMode
     register_command(:exit_mode, "exit", "Exit ActiveRecord browser") { |intp| intp.modes.exit_mode }
     register_command(:list_model, "list :model_id", "List model instances")
     register_command(:use_namespace, "use :namespace_id", "Use the current namespace")
+    register_command(:mode_vm, "vm", "Enter VM Mode") { |intp, out|
+        if @ns.nil?
+            out.puts "No namespace selected"
+        else
+            intp.modes.enter_mode :activerecord_vm, @ns
+        end
+    }
 
     register_command(:show_namespaces, "show namespaces", "Show registered namespaces") { |intp, ar, out|
         pt = PrinTable.new
@@ -38,7 +47,7 @@ class ActiveRecordMode < BaseMode
         out.puts "#{entries.length} entries"
     }
 
-    def post_enter(out, ar, namespace_id)
+    def post_enter(out, ar, namespace_id, ctx)
         use_namespace out, ar, namespace_id unless namespace_id.nil?
     end
 
@@ -46,6 +55,38 @@ class ActiveRecordMode < BaseMode
         @ns = ar.namespace(namespace_id.to_s.to_sym)
 
         out.puts "Currently used namespace: #{@ns.id}"
+    end
+
+    def dynamic_command(input)
+        begin
+            tokens = ARQLLexer.new.tokenize(input)[:tokens]
+            ast, remaining_tokens = ARQLCommandParser.new.parse(tokens)
+
+            command_list = ARQLProcessor.new.process ast
+            vm = ARQLVM.new @ns
+
+            # the action lambda is dependency-injected
+            action = -> (out) {
+                command_list.each { |instr| vm.send instr[0], *(instr[1]), &instr[2] }
+                process_object(vm.pop, out)
+            }
+
+            Command.new(:dynamic, "", "", { dynamic: true }, &action)
+        rescue => e
+            puts "ERROR"
+        end
+    end
+
+    def process_object(result, out)
+        case result.type
+        when :select_result
+            pt = PrinTable.new
+
+            head = result.children.first[0]
+            body = result.children.first[1]
+
+            out.puts pt.print(head, body, :db)
+        end
     end
 
     def list_model(out, ar, model_id)
@@ -56,11 +97,6 @@ class ActiveRecordMode < BaseMode
         else
             pt = PrinTable.new
 
-            tokens = ARQLLexer.new.tokenize("select user{name: 'Alex Pecsi', address: lofasz}%3+10!")[:tokens]
-            ast, remaining_tokens = ARQLCommandParser.new.parse(tokens)
-
-            command = ARQLProcessor.new.process ast
-
             out.puts pt.print(model[:class_name].new.filter_fields(:verbose), model[:class_name].all.map { |instance| instance.flatten_fields(:verbose) }, :db)
         end
     end
@@ -68,7 +104,67 @@ end
 
 class ARQLProcessor < AST::Processor
 
+    def initialize
+        super
+    end
+
     def on_select_expr(node)
+        process_all(node).flatten(1) << [ :apply, [], -> (model, data, verbosity) {
+            header = model.new.filter_fields(verbosity)
+
+            s(:select_result, [ header, data ])
+        } ]
+    end
+
+    def on_model_expr(node)
+        process_all(node).flatten(1)
+    end
+
+    def on_model_ids(node)
+        process_all(node).map { |n|
+            [
+                [ :select_model, [ n.to_s.to_sym ] ]
+            ]
+        }.flatten(1)
+    end
+
+    def on_model_id(node)
+        node.children.first
+    end
+
+    def on_model_clause(node)
+        if node.children.empty?
+            [
+                [ :dup, [] ],
+                [ :apply, [], -> (model) { model.all } ]
+            ]
+        else
+            node.children.first.map { |key, value|
+                [ :apply, [], -> (model) { model.where(key.to_sym => value) } ]
+            }
+        end
+    end
+
+    def on_partition_expr(node)
+        part = node.children.first
+        result = []
+
+        if part[:limit] >= 0
+            result << [ :apply, [], -> (model) { model.limit part[:limit] } ]
+        end
+
+        if part[:offset] > 0
+            result << [ :apply, [], -> (model) { model.offset part[:offset] } ]
+        end
+
+        result
+    end
+
+    def on_verbosity(node)
+        [
+            [ :apply, [], -> (model) { model.map { |e| e.flatten_fields(node.children.first) } } ],
+            [ :push, [ node.children.first ] ]
+        ]
     end
 
 end
@@ -107,10 +203,10 @@ class ARQLCommandParser
     def parse_model_expression(tokens)
         raise "Missing model definition" if tokens.nil? or tokens.length == 0
 
-        if tokens.first.type == :word
-            model_ids = tokens.first.children.map { |c| s(:model_id, c) }
+        if tokens.length > 0 and tokens.first.type == :word
+            model_ids = tokens.first.children.reduce(s(:model_ids)){ |acc, c| acc.append(s(:model_id, c)) }
             model_clause, remaining_tokens = parse_clause(tokens[1..-1], true)
-            [ s(:model_expr, s(:model_ids, model_ids), model_clause), remaining_tokens ]
+            [ s(:model_expr, model_ids, model_clause), remaining_tokens ]
         else
             raise "Invalid model definition: #{tokens.first.to_s}"
         end
@@ -121,7 +217,7 @@ class ARQLCommandParser
     def parse_clause(tokens, may_fail = false)
         raise "Missing clause definition" if !may_fail and (tokens.nil? or tokens.length == 0)
 
-        if tokens.first.type == :brace_open
+        if tokens.length > 0 and tokens.first.type == :brace_open
             if tokens.find { |token| token.type == :brace_close }.nil?
                 raise "Unmatched closing brace"
             else
@@ -280,5 +376,11 @@ class ARQLLexer
         else
             { tokens: acc[:tokens][0...-1] << s(:quoted, acc[:tokens][-1].children[0] + current), mode: :quoted }
         end
+    end
+end
+
+class Object
+    def map(&func)
+        func.call self
     end
 end

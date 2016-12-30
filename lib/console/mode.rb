@@ -112,4 +112,8 @@ class BaseMode
             end
         end
     end
+
+    def dynamic_command(input)
+        false
+    end
 end

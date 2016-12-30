@@ -155,3 +155,6 @@ class Signature
         end
     end
 end
+
+class DynamicSignature
+end

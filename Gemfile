@@ -5,7 +5,8 @@ source 'https://rubygems.org'
 end
 
 gem 'simplecov'
-gem 'activerecord', '~> 4.2.6'
+gem 'activerecord', '~> 5.0'
+#gem 'activerecord', '~> 4.2.6'
 gem 'activerecord-jdbc-adapter', '~> 1.3', platform: :jruby
 gem 'activerecord-jdbcpostgresql-adapter', platform: :jruby
 gem 'pg', platform: :mri
