@@ -29,6 +29,10 @@ class ARQLVM
         end
     end
 
+    # Takes a class from the top of the stack and attempts to find an element of
+    # that class with the id of itemid and push the result back to the top of the
+    # stack.
+    # Will raise an error if the stack was empty.
     def lookup(itemid)
         model = pop
 

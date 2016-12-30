@@ -65,6 +65,12 @@ RSpec.describe ARQLVM do
     end
 
     context '#lookup' do
+        it 'should raise an error if there was nothing on the stack' do
+            vm = ARQLVM.new
+
+            expect { vm.lookup 1 }.to raise_error("No model selected")
+        end
+
         it 'should find the item with the specified itemid if it exists' do
             vm = ARQLVM.new
 
@@ -72,8 +78,8 @@ RSpec.describe ARQLVM do
 
             vm.push TestItem
             vm.lookup 445
-            expect(vm.pop).to_not be_nil
             expect(vm.size).to eq(1)
+            expect(vm.pop).to_not be_nil
         end
 
         it 'should leave a nil on stack if the selected item doesn\'t exist' do
@@ -85,7 +91,7 @@ RSpec.describe ARQLVM do
             vm.push TestItem
             vm.lookup 448
             expect(vm.pop).to be_nil
-            expect(vm.size).to eq(1)
+            expect(vm.size).to eq(0)
         end
     end
 end

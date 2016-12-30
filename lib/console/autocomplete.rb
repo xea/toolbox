@@ -1,3 +1,6 @@
+# Encapsulates the command auto-completion feature for the console service.
+# For any given user input it tries to figure out what possible commands there
+# are to complete the input.
 class Autocomplete
 
     attr_accessor :last
@@ -17,7 +20,7 @@ class Autocomplete
 
             @last = { complete: @candidates[@idx % @items.length][:complete], status: status, size: @items.length }
         elsif @items.length == 1
-            @last = { complete: @candidates[0][:complete], status: nil, size: 1 } 
+            @last = { complete: @candidates[0][:complete], status: nil, size: 1 }
         else
             @last = { complete: nil, status: nil, size: 0 }
         end
