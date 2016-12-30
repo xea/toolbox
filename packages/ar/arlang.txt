@@ -1,18 +1,3 @@
 ### Initial concept
 
-# Templates
-
-template basic-user user {
-    id: next(),
-    create_date: now()
-}
-
-template authenticated-user from basic-user user {
-    is_authenticated: true
-}
-
-template administrator from authenticated-user user {
-    is_administrator: true
-}
-
-instance initial-admin administator from 
+let a = SomeType   // a: SomeType

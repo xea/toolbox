@@ -22,6 +22,19 @@ class ActiveRecordMode < BaseMode
         end
     }
 
+    register_command(:show_associations, "show associations of :model_id", "Show associations of the selected model") { |intp, ar, out, model_id|
+        model = @ns.lookup(model_id.to_sym)
+
+        if model.nil?
+            out.puts "Couldn't find selected model"
+        else
+            pt = PrinTable.new
+
+            out.puts pt.print([ :association, :active ], model[:class_name].reflect_on_all_associations.map { |assoc| [ assoc.name.to_s, true ] }, :db)
+        end
+
+    }
+
     register_command(:show_namespaces, "show namespaces", "Show registered namespaces") { |intp, ar, out|
         pt = PrinTable.new
 
