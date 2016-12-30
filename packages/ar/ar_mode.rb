@@ -14,6 +14,13 @@ class ActiveRecordMode < BaseMode
     register_command(:exit_mode, "exit", "Exit ActiveRecord browser") { |intp| intp.modes.exit_mode }
     register_command(:list_model, "list :model_id", "List model instances")
     register_command(:use_namespace, "use :namespace_id", "Use the current namespace")
+    register_command(:mode_vm, "vm", "Enter VM Mode") { |intp, out|
+        if @ns.nil?
+            out.puts "No namespace selected"
+        else
+            intp.modes.enter_mode :activerecord_vm, @ns
+        end
+    }
 
     register_command(:show_namespaces, "show namespaces", "Show registered namespaces") { |intp, ar, out|
         pt = PrinTable.new
@@ -40,7 +47,7 @@ class ActiveRecordMode < BaseMode
         out.puts "#{entries.length} entries"
     }
 
-    def post_enter(out, ar, namespace_id)
+    def post_enter(out, ar, namespace_id, ctx)
         use_namespace out, ar, namespace_id unless namespace_id.nil?
     end
 

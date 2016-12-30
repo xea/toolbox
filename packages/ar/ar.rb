@@ -3,6 +3,7 @@ require 'activerecord-jdbc-adapter' if defined? JRUBY_VERSION
 require 'activerecord-jdbcpostgresql-adapter' if defined? JRUBY_VERSION
 require 'safe_attributes/base'
 require_relative 'ar_mode'
+require_relative 'ar_vm_mode'
 require_relative 'ar_ns'
 
 class ActiveRecordService < Service
@@ -46,9 +47,11 @@ class ActiveRecordService < Service
         @console = console
         @console.register_helper :ar, Actor.current
         @console.register_mode ActiveRecordMode
+        @console.register_mode ActiveRecordVMMode
     end
 
     def feature_console_down(console)
+        @console.unregister_mode ActiveRecordVMMode
         @console.unregister_mode ActiveRecordMode
         @console.unregister_helper :ar
         @console = nil

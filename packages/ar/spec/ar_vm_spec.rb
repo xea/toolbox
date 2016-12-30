@@ -1,5 +1,20 @@
 require 'ar/ar'
 
+class TestItem
+    @@items = []
+
+    attr_reader :itemid
+
+    def initialize(itemid)
+        @itemid = itemid
+        @@items << self
+    end
+
+    def self.find(itemid)
+        @@items.find { |item| item.itemid == itemid }
+    end
+end
+
 RSpec.describe ARQLVM do
 
     context '#initialize' do
@@ -46,6 +61,31 @@ RSpec.describe ARQLVM do
             vm.push [ 3, 4, 5 ]
             vm.apply { |a| a.map { |b| b + 1 } }
             expect(vm.pop(2)).to eq([1, [4, 5, 6]])
+        end
+    end
+
+    context '#lookup' do
+        it 'should find the item with the specified itemid if it exists' do
+            vm = ARQLVM.new
+
+            testitem = TestItem.new 445
+
+            vm.push TestItem
+            vm.lookup 445
+            expect(vm.pop).to_not be_nil
+            expect(vm.size).to eq(1)
+        end
+
+        it 'should leave a nil on stack if the selected item doesn\'t exist' do
+
+            vm = ARQLVM.new
+
+            testitem = TestItem.new 994
+
+            vm.push TestItem
+            vm.lookup 448
+            expect(vm.pop).to be_nil
+            expect(vm.size).to eq(1)
         end
     end
 end
