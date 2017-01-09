@@ -110,7 +110,9 @@ class ActiveRecordMode < BaseMode
         else
             pt = PrinTable.new
 
-            out.puts pt.print(model[:class_name].new.filter_fields(:verbose), model[:class_name].all.map { |instance| instance.flatten_fields(:verbose) }, :db)
+            puts "verbosity: #{verbosity}"
+
+            out.puts pt.print(model[:class_name].new.filter_fields(verbosity), model[:class_name].all.map { |instance| instance.flatten_fields(verbosity) }, :db)
         end
     end
 end

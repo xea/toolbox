@@ -64,8 +64,12 @@ module ActiveRecordBaseProxy
             core_fields + essential_fields + basic_fields
         when :verbose
             core_fields + essential_fields + basic_fields + verbose_fields
+        when :full
+            predefined_fields = (core_fields + essential_fields + basic_fields + verbose_fields).map { |key| key.to_sym }
+            predefined_fields + (attributes.keys.map { |key| key.to_sym } - predefined_fields)
         else
-            attributes.keys
+            # if verbosity is unspecified or unknown then fall back to basic
+            core_fields + essential_fields + basic_fields
         end
     end
 
