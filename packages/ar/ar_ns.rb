@@ -36,6 +36,10 @@ module ActiveRecordNameSpace
 end
 
 module ActiveRecordBaseProxy
+    def order_fields
+        [ :id ]
+    end
+
     def core_fields
         [ :id ]
     end

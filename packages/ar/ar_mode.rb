@@ -110,9 +110,16 @@ class ActiveRecordMode < BaseMode
         else
             pt = PrinTable.new
 
-            puts "verbosity: #{verbosity}"
+            model_class = model[:class_name]
+            model_example = model_class.new
 
-            out.puts pt.print(model[:class_name].new.filter_fields(verbosity), model[:class_name].all.map { |instance| instance.flatten_fields(verbosity) }, :db)
+            object_query = if model_example.order_fields.nil? or model_example.order_fields.empty?
+                -> { model_class.all }
+            else
+                -> { model_class.order(*model_example.order_fields) }
+            end
+
+            out.puts pt.print(model[:class_name].new.filter_fields(verbosity), (object_query.call).map { |instance| instance.flatten_fields(verbosity) }, :db)
         end
     end
 end

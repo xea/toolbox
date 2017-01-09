@@ -36,6 +36,10 @@ class ActiveRecordExampleService < Service
         self.abstract_class = true
         establish_connection DEFAULT_CONNECTION
 
+        def order_fields
+            [ :rowid ]
+        end
+
         def core_fields
             [ :rowid ]
         end
