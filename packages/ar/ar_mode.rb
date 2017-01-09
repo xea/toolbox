@@ -102,7 +102,7 @@ class ActiveRecordMode < BaseMode
         end
     end
 
-    def list_model(out, ar, model_id)
+    def list_model(out, ar, model_id, verbosity = nil)
         model = @ns.lookup(model_id.to_sym)
 
         if model.nil?

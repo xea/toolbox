@@ -35,18 +35,27 @@ class Interpreter
     #
     # Note: this method doesn't touch quoted parts, ie. that are surrounded by (") characters
     def sanitize_input(input)
-		input.to_s.scan(/("[^"]+?"|\S+)/).flatten.join " "
+		clean_input = input.to_s.scan(/("[^"]+?"|\S+)/).flatten.join " "
+
+        case clean_input[-1]
+        when '+'
+            [ clean_input[0...-1], :verbose ]
+        when '!'
+            [ clean_input[0...-1], :full ]
+        else
+            [ clean_input, :basic ]
+        end
     end
 
     # Takes a line of user input from the standard input, attempts to look up the appropriate reponse to
     # the request and execute it.
     def process(raw_input)
-        clean_input = sanitize_input raw_input
+        clean_input, verbosity = sanitize_input raw_input
 
         if clean_input.length > 0
             command = find_command(clean_input) || @modes.current_mode.dynamic_command(clean_input) || @modes.global_mode.command_not_found
             user_args = extract_user_args command, clean_input
-            command_ctx = build_context(command, user_args)
+            command_ctx = build_context(command, user_args, verbosity)
             args = resolve_args(command, command_ctx)
 
             command.method.call(*args)
@@ -92,9 +101,10 @@ class Interpreter
         end
     end
 
-    def build_context(command = nil, user_args = {})
+    def build_context(command = nil, user_args = {}, verbosity = :basic)
         ctx = CommandContext.new
         ctx.user_args = lookup_args(user_args)
+        ctx.user_args[:verbosity] = verbosity
         ctx.helpers = @helpers.clone
         ctx.tables = @tables.clone
         ctx.helpers[:current_mode] = @modes.current_mode
