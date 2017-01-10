@@ -129,9 +129,25 @@ class Interpreter
     end
 
     # Perform a key lookup in the registered data tables
-    def table_lookup(key, arg)
-        table = @tables.find { |id, current_table| current_table.has_key? arg.to_sym }
-        table[1][arg.to_sym] unless table.nil?
+    def table_lookup(key, arg, table = nil)
+        lookup_key = key[1..-1].to_sym
+
+        lookup_table = table || @tables[lookup_key]
+
+        if lookup_table.kind_of? Hash
+            lookup_table[arg.to_sym] 
+        elsif lookup_table.kind_of? Array
+            if lookup_table.member? arg or lookup_table.member? arg.to_sym
+                arg
+            else
+                raise "Invalid argument"
+            end
+        elsif lookup_table.kind_of? Proc
+            table_lookup(key, arg, lookup_table.call)
+        else
+            raise "Unknown lookup table type"
+        end
+        #table[1][arg.to_sym] unless table.nil?
     end
 
     def attribute_lookup(key, arg)

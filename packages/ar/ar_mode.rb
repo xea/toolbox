@@ -11,6 +11,10 @@ class ActiveRecordMode < BaseMode
     mode_id :activerecord
     access_from :home, "ar :namespace_id?", "Enter ActiveRecord browser"
 
+    tables({
+        sample_vars: -> { [ "dynamic" ] }
+    }) 
+
     register_command(:exit_mode, "exit", "Exit ActiveRecord browser") { |intp| intp.modes.exit_mode }
     register_command(:list_model, "list :model_id", "List model instances")
     register_command(:use_namespace, "use :namespace_id", "Use the current namespace")
@@ -22,7 +26,9 @@ class ActiveRecordMode < BaseMode
         end
     }
 
-    register_command(:show_associations, "show associations of :model_id", "Show associations of the selected model") { |intp, ar, out, model_id|
+    register_command(:show_associations, "show associations of $sample_vars", "Show associations of the selected model") { |intp, ar, out, sample_vars|
+        binding.pry
+        puts "#{current_models}"
         model = @ns.lookup(model_id.to_sym)
 
         if model.nil?

@@ -33,6 +33,8 @@ class Signature
 
             if table.kind_of? Array
                 table
+            elsif table.kind_of? Proc
+                table.call
             else
                 # Hash or Expandable
                 table.keys

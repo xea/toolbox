@@ -8,6 +8,13 @@ RSpec.describe Interpreter do
 
         mode_id :test
 
+        tables({
+            array_lookup: [ "apple", "pear", "strawberry" ],
+            hash_lookup: { red: '#f00', green: '#0f0', blue: '#00f' },
+            lambda_lookup: -> { [ "dynamic" ] },
+            lambda_hash_lookup: -> { { apple: "red", grape: "blue", banana: "yellow" } }
+        })
+
         register_command(:test_cmd, "test", "help")
         register_command(:test_param, "param :a", "help")
         register_command(:test_inline, "inline", "help") { @calls << [ :test_inline ]; :test_inline_success }
@@ -43,16 +50,16 @@ RSpec.describe Interpreter do
 
     context "#sanitize_input" do
         it 'should leave sanitised inputs as they are' do
-            expect(@intp.sanitize_input "a").to eq("a")
+            expect(@intp.sanitize_input "a").to eq(["a", :basic])
         end
 
         it 'should remove leading and trailing whitespaces' do
-            expect(@intp.sanitize_input '  spaces   ').to eq('spaces')
-            expect(@intp.sanitize_input "\ttab\t").to eq('tab')
+            expect(@intp.sanitize_input '  spaces   ').to eq(['spaces', :basic])
+            expect(@intp.sanitize_input "\ttab\t").to eq(['tab', :basic])
         end
 
         it 'should leave quoted parts as they are' do
-            expect(@intp.sanitize_input "  \"\tquoted and voted \" ").to eq("\"\tquoted and voted \"")
+            expect(@intp.sanitize_input "  \"\tquoted and voted \" ").to eq(["\"\tquoted and voted \"", :basic])
         end
     end
 
@@ -76,6 +83,17 @@ RSpec.describe Interpreter do
     end
 
     context "#lookup_args" do
+        it 'should return the same key for array tables when the element is defined' do
+            expect(@intp.lookup_args({ ':just_something' => "foo"})).to eq({ just_something: "foo" })
+            expect(@intp.lookup_args({ '$array_lookup' => "apple" })).to eq({ array_lookup: "apple" })
+            expect(@intp.lookup_args({ '$array_lookup' => "pear" })).to eq({ array_lookup: "pear" })
+            expect(@intp.lookup_args({ '$array_lookup' => "strawberry" })).to eq({ array_lookup: "strawberry" })
+            expect(@intp.lookup_args({ '$hash_lookup' => "red"})).to eq({ hash_lookup: '#f00' })
+            expect(@intp.lookup_args({ '$hash_lookup' => "green"})).to eq({ hash_lookup: '#0f0' })
+            expect(@intp.lookup_args({ '$hash_lookup' => "blue"})).to eq({ hash_lookup: '#00f' })
+            expect(@intp.lookup_args({ '$lambda_lookup' => "dynamic"})).to eq({ lambda_lookup: 'dynamic' })
+            expect(@intp.lookup_args({ '$lambda_hash_lookup' => "apple"})).to eq({ lambda_hash_lookup: 'red' })
+        end
     end
 
     context "#table_lookup" do
