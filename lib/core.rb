@@ -272,7 +272,7 @@ class Core
                 end
 
                 # If this service was just required by another service, starting it may trigger starting the dependant as well
-                dependants(service)[:required].each do |dependant|
+                dependants(service)[:required].find_all { |srv| !srv.service.state? RunState::STOPPED }.each do |dependant|
                     if has_required_dependencies? dependant.service 
                         start_service dependant
                     end
