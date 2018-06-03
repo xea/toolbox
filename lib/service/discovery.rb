@@ -1,8 +1,9 @@
 require_relative '../core/service'
 require 'digest/sha2'
 require 'thread'
+require 'time'
 
-class DiscoveryService < Service
+class DiscoveryService < SimpleService
 
     DEFAULT_WATCH_DIR = "packages"
 
@@ -16,24 +17,37 @@ class DiscoveryService < Service
     optional_features :logger
     provided_features :discovery
 
-    def init
-        @package_db = { installed: {} }
+    def init(package_db = {})
+        @package_db = { installed: package_db }
+        @last_scan = nil
     end
 
-    def start
+    def start(master = true)
         watch_dir = @config[CONFIG_WATCH_DIR] || DEFAULT_WATCH_DIR
+        interval = @config[CONFIG_SCAN_INTERVAL] || DEFAULT_SCAN_INTERVAL
         @watch_dir = watch_dir
         @watch_queue = Queue.new
 
-        interval = @config[CONFIG_SCAN_INTERVAL] || DEFAULT_SCAN_INTERVAL
+#        after(0.1) do
+        do_scan
 
-        after(0.1) do
-            do_scan
+=begin
+
+            @companion = DiscoveryCompanion.new
+            @companion.init @package_db
+            @companion.instance_variable_set "@last_scan", @last_scan
+            @companion.instance_variable_set "@config", @config
+            @companion.instance_variable_set "@framework", @framework
+            @companion.instance_variable_set "@logger", @logger
+            @companion.start false
+
+            @companion.schedule_scan
         end
 
-        @scanner = every(interval) do
-            do_scan
-        end
+#        @scanner = every(interval) do
+#            do_scan
+#        end
+=end
     end
 
     def do_scan
@@ -47,6 +61,16 @@ class DiscoveryService < Service
 
     def stop
         @scanner.cancel
+    end
+
+    def verbose_state
+        last_time = 0
+
+        unless @last_scan.nil?
+            last_time = Time.now - @last_scan
+        end
+
+        "Last scan: #{last_time.to_i} seconds ago"
     end
 
     def scan_packages
@@ -75,6 +99,7 @@ class DiscoveryService < Service
 
         step_install(new_pkgs)
 
+        @last_scan = Time.now
         @logger.debug "Scan finished"
     end
 

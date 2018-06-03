@@ -13,6 +13,7 @@ require 'thread'
 require 'monitor'
 require 'pry'
 
+$CELLULOID_DEBUG = true
 $:.unshift File.dirname(__FILE__)
 
 # Implements the main framework and administrative logic, eg. module wiring, dependency injection and service location.
@@ -133,6 +134,7 @@ class Core
             operations
         end
 
+        # Process_stages is called one for every committed stage.
         def process_stages(stages)
             current_stage = stages.shift
 
