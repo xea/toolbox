@@ -166,6 +166,8 @@ class Core
 
                 end
 
+                satisfied_dependencies = []
+
                 registrations = add_requests.map do |add_request|
                     @service_registry.register_service(*(add_request.drop(1))) { |registration|
                         if has_required_dependencies? registration.service
@@ -177,6 +179,8 @@ class Core
                         dependants(registration.service)[:required].each do |dependant|
                             if has_required_dependencies? dependant.service and dependant.service.state? RunState::INSTALLED
                                 dependant.service.set_state_resolved
+
+                                satisfied_dependencies << dependant
                             end
                         end
                     }
@@ -184,6 +188,10 @@ class Core
 
                 registrations.each do |registration|
                     start_service registration
+                end
+
+                satisfied_dependencies.each do |dependant|
+                    start_service dependant
                 end
 
                 # Process the remaining stages
@@ -224,6 +232,12 @@ class Core
     def start_service(service_registration)
         service = service_registration[:service]
 
+        # If the service had been stopped manually before the start, we'll first need to check if all required dependencies
+        # are present before proceeding.
+        if service.state? RunState::STOPPED and has_required_dependencies? service 
+            service.set_state_resolved
+        end
+
         if service.state? RunState::RESOLVED
             service.set_state_starting
 
@@ -260,7 +274,7 @@ class Core
         end
     end
 
-    def stop_service(service_registration)
+    def stop_service(service_registration, requested = false)
         service = service_registration[:service]
 
         if service.state? RunState::ACTIVE
@@ -280,7 +294,9 @@ class Core
 
             service.stop
 
-            if has_required_dependencies?(service)
+            if requested
+                service.set_state_stopped
+            elsif has_required_dependencies?(service)
                 service.set_state_resolved
             else
                 service.set_state_installed

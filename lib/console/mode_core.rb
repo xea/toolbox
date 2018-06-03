@@ -39,7 +39,7 @@ class ModeCore < BaseMode
     end
 
     def stop_service(out, framework, service_id)
-        framework.stop_service service_id
+        framework.stop_service service_id, true
     end
 
     def start_service(out, framework, service_id)

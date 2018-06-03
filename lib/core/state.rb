@@ -6,6 +6,7 @@ module RunState
     STARTING = :starting
     ACTIVE = :active
     STOPPING = :stopping
+    STOPPED = :stopped
 
     def set_state_uninstalled(verbose_state = "")
         @_state = RunState::UNINSTALLED
@@ -34,6 +35,11 @@ module RunState
 
     def set_state_starting(verbose_state = "")
         @_state = RunState::STARTING
+        @_verbose_state = verbose_state
+    end
+
+    def set_state_stopped(verbose_state = "")
+        @_state = RunState::STOPPED
         @_verbose_state = verbose_state
     end
 

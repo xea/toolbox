@@ -48,8 +48,8 @@ class Framework < Service
         @core.start_service service_registration unless service_registration.nil?
     end
 
-    def stop_service(service_id)
+    def stop_service(service_id, requested = false)
         service_registration = @core.service_registry.find { |service| service.service_id == service_id.to_sym }
-        @core.stop_service service_registration unless service_registration.nil?
+        @core.stop_service service_registration, requested unless service_registration.nil?
     end
 end
