@@ -16,8 +16,10 @@ class ActiveRecordMode < BaseMode
     register_command(:show_namespaces, "ns", "List available namespaces")
     register_command(:use_namespace, "ns :namespace_id", "Use the current namespace")
     register_command(:select_model, "select :model_id", "Select and list a model")
+    register_command(:show_current_selection, "show", "Show currently selected object(s)")
     register_command(:show_models, "show models", "List available instances of the selected model")
     register_command(:show_stack, "show stack", "Show current scope stack")
+    register_command(:pop_stack, "pop", "Pop the top element from the stack")
 
     # When entering AR browse mode, let's pre-select the requested namespace, if any
     def post_enter(intp, out, ar, namespace_id, ctx)
@@ -167,27 +169,35 @@ class ActiveRecordMode < BaseMode
             fragments = model_id.split('/').find_all { |e| !e.empty? }
 
             if fragments.length > 0 and lookup_model(fragments, out)
-                pt = PrinTable.new
-
-                if @scope_stack.last[:type] == :list
-                    if @scope_stack.length > 1
-                        lastobj = @scope_stack.last[:object]
-                        test_obj = @scope_stack[-2][:object].class.reflect_on_all_associations.find { |ass| ass.name == @scope_stack.last[:selector].to_sym }.klass.new
-
-                        list_fields = [ :core_fields, :essential_fields, :basic_fields ].map { |fg| test_obj.send fg }.reduce(:+) 
-
-                        out.puts(pt.print list_fields.map { |f| f.to_s.upcase }, lastobj.map { |instance| list_fields.map { |f| instance.send f }})
-                    end
-                elsif @scope_stack.last[:type] == :instance
-                elsif @scope_stack.last[:type] == :model
-                    lastobj = @scope_stack.last[:object]
-
-                    list_fields = [ :core_fields, :essential_fields, :basic_fields ].map { |fg| lastobj[:class_name].new.send fg }.reduce(:+) 
-
-                    out.puts(pt.print list_fields.map { |f| f.to_s.upcase }, lastobj[:class_name].all.map { |instance| list_fields.map { |f| instance.send f }})
-                end
+                show_current_selection out
             else
                 out.puts "A selector wasn't specified"
+            end
+        end
+    end
+
+    def show_current_selection(out)
+        if @scope_stack.nil? or @scope_stack.empty?
+            out.puts "Nothing has been selected"
+        else
+            pt = PrinTable.new
+
+            if @scope_stack.last[:type] == :list
+                if @scope_stack.length > 1
+                    lastobj = @scope_stack.last[:object]
+                    test_obj = @scope_stack[-2][:object].class.reflect_on_all_associations.find { |ass| ass.name == @scope_stack.last[:selector].to_sym }.klass.new
+
+                    list_fields = [ :core_fields, :essential_fields, :basic_fields ].map { |fg| test_obj.send fg }.reduce(:+) 
+
+                    out.puts(pt.print list_fields.map { |f| f.to_s.upcase }, lastobj.map { |instance| list_fields.map { |f| instance.send f }})
+                end
+            elsif @scope_stack.last[:type] == :instance
+            elsif @scope_stack.last[:type] == :model
+                lastobj = @scope_stack.last[:object]
+
+                list_fields = [ :core_fields, :essential_fields, :basic_fields ].map { |fg| lastobj[:class_name].new.send fg }.reduce(:+) 
+
+                out.puts(pt.print list_fields.map { |f| f.to_s.upcase }, lastobj[:class_name].all.map { |instance| list_fields.map { |f| instance.send f }})
             end
         end
     end
@@ -214,6 +224,10 @@ class ActiveRecordMode < BaseMode
         else
             @scope_stack.each_with_index { |scope, idx| out.puts "#{idx}. #{scope}" }
         end
+    end
+
+    def pop_stack(out)
+        @scope_stack.pop unless @scope_stack.empty?
     end
 =begin
     register_command(:show_associations, "show associations of $sample_vars", "Show associations of the selected model") { |intp, ar, out, sample_vars|
