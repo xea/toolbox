@@ -19,7 +19,7 @@ class ActiveRecordMode < BaseMode
     register_command(:show_current_selection, "show", "Show currently selected object(s)")
     register_command(:show_models, "show models", "List available instances of the selected model")
     register_command(:show_stack, "show stack", "Show current scope stack")
-    register_command(:pop_stack, "pop", "Pop the top element from the stack")
+    register_command(:pop_stack, "pop :amount?", "Pop the top N elements (default is 1) from the stack")
 
     # When entering AR browse mode, let's pre-select the requested namespace, if any
     def post_enter(intp, out, ar, namespace_id, ctx)
@@ -158,6 +158,14 @@ class ActiveRecordMode < BaseMode
                         end
 
                         @scope_stack << { type: :list, object: items, selector: current }
+
+                        if fragments.length > 0
+                            lookup_model(fragments, out)
+                        else
+                            @scope_stack.last
+                        end
+                    else
+                        out.puts "TODO"
                     end
                 end
             end
@@ -229,8 +237,8 @@ class ActiveRecordMode < BaseMode
         end
     end
 
-    def pop_stack(out)
-        @scope_stack.pop unless @scope_stack.empty?
+    def pop_stack(out, amount = 1)
+        @scope_stack.pop(amount.to_i) unless @scope_stack.empty?
     end
 =begin
     register_command(:show_associations, "show associations of $sample_vars", "Show associations of the selected model") { |intp, ar, out, sample_vars|
