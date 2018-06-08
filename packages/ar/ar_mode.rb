@@ -93,7 +93,6 @@ class ActiveRecordMode < BaseMode
 
         def select_instance_within_list(instance_id, out, fragments)
             begin
-
                 scope_obj = @scope_stack.last[:object].find { |obj| obj.id == instance_id.to_i }
 
                 @scope_stack << { type: :instance, object: scope_obj, selector: instance_id.to_s }
@@ -152,10 +151,11 @@ class ActiveRecordMode < BaseMode
                         elsif assoc.is_a? ActiveRecord::Reflection::HasManyReflection
                         end
 
-                        if assoc.collection?
-                        end
-
                         items = @scope_stack.last[:object].send assoc.name
+
+                        unless assoc.collection?
+                            items = [ items ]
+                        end
 
                         @scope_stack << { type: :list, object: items, selector: current }
                     end
