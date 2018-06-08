@@ -192,6 +192,9 @@ class ActiveRecordMode < BaseMode
                     out.puts(pt.print list_fields.map { |f| f.to_s.upcase }, lastobj.map { |instance| list_fields.map { |f| instance.send f }})
                 end
             elsif @scope_stack.last[:type] == :instance
+                pt = PrinTable.new
+
+                out.puts pt.print([ :association, :active ], @scope_stack.last[:object].class.reflect_on_all_associations.map { |assoc| [ assoc.name.to_s, true ] }, :db)
             elsif @scope_stack.last[:type] == :model
                 lastobj = @scope_stack.last[:object]
 
