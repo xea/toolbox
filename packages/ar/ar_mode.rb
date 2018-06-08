@@ -185,13 +185,12 @@ class ActiveRecordMode < BaseMode
         end
     end
 
-    def show_current_selection(out, verbosity = :core)
+    def show_current_selection(out, verbosity = :basic)
 
         if @scope_stack.nil? or @scope_stack.empty?
             out.puts "Nothing has been selected"
         else
             pt = PrinTable.new
-
 
             if @scope_stack.last[:type] == :list
                 if @scope_stack.length > 1
@@ -203,7 +202,10 @@ class ActiveRecordMode < BaseMode
             elsif @scope_stack.last[:type] == :instance
                 pt = PrinTable.new
 
-                out.puts pt.print([ :association, :active ], @scope_stack.last[:object].class.reflect_on_all_associations.map { |assoc| [ assoc.name.to_s, true ] }, :db)
+                out.puts pt.print([ "", "" ], @scope_stack.last[:object].filter_fields(verbosity).zip(@scope_stack.last[:object].flatten_fields(verbosity)))
+                out.puts
+                out.puts "Associations: #{@scope_stack.last[:object].class.reflect_on_all_associations.map { |assoc| assoc.name }.join(', ')}"
+                #out.puts pt.print([ :association, :active ], @scope_stack.last[:object].class.reflect_on_all_associations.map { |assoc| [ assoc.name.to_s, true ] }, :db)
             elsif @scope_stack.last[:type] == :model
                 lastobj = @scope_stack.last[:object]
                 testobj = lastobj[:class_name].new
