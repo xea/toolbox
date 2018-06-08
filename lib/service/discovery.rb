@@ -178,32 +178,38 @@ class DiscoveryService < SimpleService
             end
 
             main_file = "#{@watch_dir}/#{internal_id}/#{internal_id}.rb"
-            load main_file
 
-            entry = package_descriptor
-            entry[:hash] = pkg_hash
+            if File.exist? main_file
+                load main_file
 
-            @package_db[:installed][internal_id] = entry
+                entry = package_descriptor
+                entry[:hash] = pkg_hash
 
-            @framework.begin_tx do |tx|
-                (entry['services'] || {}).each do |pkg_service_id, pkg_service|
-                    begin
-                        @logger.debug "Trying to register service #{pkg_service_id}"
-                        service_class = Kernel.const_get(pkg_service['class'].to_sym)
-                        tx.register_service(pkg_service_id.to_sym, service_class)
-                        @logger.info "Registered new package service #{pkg_service_id}"
+                @package_db[:installed][internal_id] = entry
 
-                    rescue => e
-                        @logger.error e.message
+                @framework.begin_tx do |tx|
+                    (entry['services'] || {}).each do |pkg_service_id, pkg_service|
+                        begin
+                            @logger.debug "Trying to register service #{pkg_service_id}"
+                            service_class = Kernel.const_get(pkg_service['class'].to_sym)
+                            tx.register_service(pkg_service_id.to_sym, service_class)
+                            @logger.info "Registered new package service #{pkg_service_id}"
+
+                        rescue => e
+                            @logger.error e.message
+                        end
                     end
+
+                    tx.commit_stage if tx.dirty?
+                    tx.process_service_queue
+                    tx.commit
                 end
 
-                tx.commit_stage if tx.dirty?
-                tx.process_service_queue
-                tx.commit
+                true
+            else
+                @logger.warn "Package #{internal_id} does not contain a main file (#{internal_id}.rb)"
+                false
             end
-
-            true
         else
             @logger.debug "Package #{internal_id} is already installed. Skipping"
 

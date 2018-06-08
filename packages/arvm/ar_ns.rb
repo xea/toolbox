@@ -11,7 +11,7 @@ class ActiveRecordNameSpaceProxy
     end
 
     def registered_models
-        @ns.nil? ? [] : @ns.registered_models
+        @ns.registered_models
     end
 
     def lookup(model_id)

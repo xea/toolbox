@@ -1,0 +1,5 @@
+id: ActiveRecord
+version: 0.1
+services:
+    ar:
+        class: ActiveRecordService

@@ -1,4 +1,4 @@
-require 'ar/ar'
+require 'arvm/ar_vm'
 
 class TestItem
     @@items = []
