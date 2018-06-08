@@ -291,6 +291,20 @@ class ActiveRecordMode < BaseMode
         end
     end
 =end
+    def prompt
+        if @scope_stack.nil? or @scope_stack.empty?
+            "(#{'*'.red})"
+        else
+            case @scope_stack.last[:type]
+            when :instance
+                "(#{@scope_stack.last[:object].class.model_name.human.to_s.red}/#{@scope_stack.last[:object].id})"
+            when :model
+                "(#{@scope_stack.last[:object][:class_name].model_name.human.to_s.red}/*})"
+            when :list
+                "(#{@scope_stack.last[:selector].to_s.red}/*)"
+            end
+        end
+    end
 end
 
 class Object

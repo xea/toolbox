@@ -63,7 +63,7 @@ class Console
     end
 
     def gen_prompt
-        mode_str = "#{@interpreter.modes.current_mode.mode_id.to_s.cyan}"
+        mode_str = "#{@interpreter.modes.current_mode.mode_id.to_s.cyan}#{@interpreter.modes.current_mode.prompt}"
         "(#{mode_str}) "
     end
 

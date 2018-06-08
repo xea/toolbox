@@ -116,4 +116,7 @@ class BaseMode
     def dynamic_command(input)
         false
     end
+
+    def prompt
+    end
 end
