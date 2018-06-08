@@ -72,7 +72,7 @@ class ActiveRecordMode < BaseMode
     #
     # stack item: { type: :model, object: #<12312312>, selector: "" }
 
-    def select_model(intp, ar, out, model_id)
+    def select_model(intp, ar, out, model_id, verbosity)
         def select_instance_within_model(instance_id, out, fragments)
             begin
                 scope_obj = @scope_stack.last[:object][:class_name].find(instance_id)
@@ -152,12 +152,13 @@ class ActiveRecordMode < BaseMode
                         end
 
                         items = @scope_stack.last[:object].send assoc.name
+                        item_type = :instance
 
-                        unless assoc.collection?
-                            items = [ items ]
+                        if assoc.collection?
+                            item_type = :list
                         end
 
-                        @scope_stack << { type: :list, object: items, selector: current }
+                        @scope_stack << { type: item_type, object: items, selector: current }
 
                         if fragments.length > 0
                             lookup_model(fragments, out)
@@ -177,27 +178,27 @@ class ActiveRecordMode < BaseMode
             fragments = model_id.split('/').find_all { |e| !e.empty? }
 
             if fragments.length > 0 and lookup_model(fragments, out)
-                show_current_selection out
+                show_current_selection out, verbosity
             else
                 out.puts "A selector wasn't specified"
             end
         end
     end
 
-    def show_current_selection(out)
+    def show_current_selection(out, verbosity = :core)
+
         if @scope_stack.nil? or @scope_stack.empty?
             out.puts "Nothing has been selected"
         else
             pt = PrinTable.new
+
 
             if @scope_stack.last[:type] == :list
                 if @scope_stack.length > 1
                     lastobj = @scope_stack.last[:object]
                     test_obj = @scope_stack[-2][:object].class.reflect_on_all_associations.find { |ass| ass.name == @scope_stack.last[:selector].to_sym }.klass.new
 
-                    list_fields = [ :core_fields, :essential_fields, :basic_fields ].map { |fg| test_obj.send fg }.reduce(:+) 
-
-                    out.puts(pt.print list_fields.map { |f| f.to_s.upcase }, lastobj.map { |instance| list_fields.map { |f| instance.send f }})
+                    out.puts pt.print(test_obj.filter_fields(verbosity), lastobj.map { |instance| instance.flatten_fields(verbosity) }, :db)
                 end
             elsif @scope_stack.last[:type] == :instance
                 pt = PrinTable.new
@@ -205,10 +206,15 @@ class ActiveRecordMode < BaseMode
                 out.puts pt.print([ :association, :active ], @scope_stack.last[:object].class.reflect_on_all_associations.map { |assoc| [ assoc.name.to_s, true ] }, :db)
             elsif @scope_stack.last[:type] == :model
                 lastobj = @scope_stack.last[:object]
+                testobj = lastobj[:class_name].new
 
-                list_fields = [ :core_fields, :essential_fields, :basic_fields ].map { |fg| lastobj[:class_name].new.send fg }.reduce(:+) 
+                object_query = if testobj.order_fields.nil? or testobj.order_fields.empty?
+                    -> { lastobj[:class_name].all }
+                else
+                    -> { lastobj[:class_name].order(*testobj.order_fields) }
+                end
 
-                out.puts(pt.print list_fields.map { |f| f.to_s.upcase }, lastobj[:class_name].all.map { |instance| list_fields.map { |f| instance.send f }})
+                out.puts pt.print(lastobj[:class_name].new.filter_fields(verbosity), object_query.call.map { |instance| instance.flatten_fields(verbosity) }, :db)
             end
         end
     end
@@ -241,54 +247,7 @@ class ActiveRecordMode < BaseMode
         @scope_stack.pop(amount.to_i) unless @scope_stack.empty?
     end
 =begin
-    register_command(:show_associations, "show associations of $sample_vars", "Show associations of the selected model") { |intp, ar, out, sample_vars|
-        puts "#{current_models}"
-        model = @ns.lookup(model_id.to_sym)
-
-        if model.nil?
-            out.puts "Couldn't find selected model"
-        else
-            pt = PrinTable.new
-
-            out.puts pt.print([ :association, :active ], model[:class_name].reflect_on_all_associations.map { |assoc| [ assoc.name.to_s, true ] }, :db)
-        end
-
-    }
-
     def dynamic_command(input)
-    end
-
-    def process_object(result, out)
-        case result.type
-        when :select_result
-            pt = PrinTable.new
-
-            head = result.children.first[0]
-            body = result.children.first[1]
-
-            out.puts pt.print(head, body, :db)
-        end
-    end
-
-    def list_model(out, ar, model_id, verbosity = nil)
-        model = @ns.lookup(model_id.to_sym)
-
-        if model.nil?
-            out.puts "Couldn't find selected model"
-        else
-            pt = PrinTable.new
-
-            model_class = model[:class_name]
-            model_example = model_class.new
-
-            object_query = if model_example.order_fields.nil? or model_example.order_fields.empty?
-                -> { model_class.all }
-            else
-                -> { model_class.order(*model_example.order_fields) }
-            end
-
-            out.puts pt.print(model[:class_name].new.filter_fields(verbosity), (object_query.call).map { |instance| instance.flatten_fields(verbosity) }, :db)
-        end
     end
 =end
     def prompt
@@ -299,7 +258,7 @@ class ActiveRecordMode < BaseMode
             when :instance
                 "(#{@scope_stack.last[:object].class.model_name.human.to_s.red}/#{@scope_stack.last[:object].id})"
             when :model
-                "(#{@scope_stack.last[:object][:class_name].model_name.human.to_s.red}/*})"
+                "(#{@scope_stack.last[:object][:class_name].model_name.human.to_s.red}/*)"
             when :list
                 "(#{@scope_stack.last[:selector].to_s.red}/*)"
             end

@@ -58,7 +58,7 @@ module ActiveRecordBaseProxy
 
     # Return an array of symbols representing fields corresponding to the selected
     # verbosity level or all if none was specified
-    def filter_fields(verbosity)
+    def filter_fields(verbosity = :basic)
         case verbosity
         when :core
             core_fields
@@ -77,7 +77,7 @@ module ActiveRecordBaseProxy
         end
     end
 
-    def flatten_fields(verbosity)
+    def flatten_fields(verbosity = :basic)
         filter_fields(verbosity).map { |attr| resolve_attribute(attr) }
     end
 
